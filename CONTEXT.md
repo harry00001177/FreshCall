@@ -31,8 +31,15 @@ Terms only. No implementation details here — see `src/` and `config.yaml`.
 - **Layer B** — inventory-aware order optimization (using real on-hand stock).
   Not implementable on the Favorita dataset (no inventory field); not
   validated by this prototype.
-- **case_pack** — units per case for a SKU (e.g. 12). Orders are always in
-  whole cases.
+- **case_pack** — units per case. A single global assumption (12) applied to
+  every SKU in `config.yaml` — Favorita has no real case-pack field, so a
+  per-SKU value would be no more accurate, just harder to defend (one
+  labelled assumption beats five unlabelled-looking ones). Orders are always
+  in whole cases.
+- **reference anchor** — the one number shown alongside an `abstain` ("ASK
+  ME") message: last same-weekday actual sales (a historical fact, not a
+  model output). Allowed precisely because it isn't a confidence signal —
+  see the `confidence` ban above.
 - **on_hand** — units already in the store before tomorrow's delivery.
   Hardcoded to 0 in the prototype (Favorita has no inventory field) — this is
   a data limitation, not a modeling choice.
