@@ -9,6 +9,9 @@ from functools import lru_cache
 
 import pandas as pd
 import yaml
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from freshcall.containment import check_numeral_containment
 from freshcall.explain import build_fact_block, generate_explanation
