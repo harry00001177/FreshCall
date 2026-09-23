@@ -1,0 +1,31 @@
+# All values below are ASSUMPTION unless noted otherwise — Favorita has no
+# case-pack, safety-stock, or on-hand-inventory fields, so these cannot be
+# derived from data. See DECISIONS.md and CONTEXT.md for why each is set
+# the way it is.
+
+case_pack: 12          # ASSUMPTION — one global value for every SKU (see DECISIONS.md 2026-09-22)
+safety: 0               # ASSUMPTION — kept 0 so recommended cases are comparable to hindsight_demand_order
+on_hand: 0              # Not an assumption — Favorita has no inventory field, so this is a data limitation
+
+gate:
+  rel_width_threshold: 0.60   # opening position for the Section 7 sweep, not a derived value
+  sweep_thresholds: [0.40, 0.50, 0.60, 0.70]
+
+model:
+  quantiles: [0.1, 0.5, 0.9]
+  # sklearn GradientBoostingRegressor hyperparameters — starting defaults,
+  # not tuned yet
+  n_estimators: 100
+  max_depth: 3
+  learning_rate: 0.1
+  random_state: 42
+
+explain:
+  model: "openai/gpt-4o-mini"
+  temperature: 0
+  max_tokens: 80
+
+slice:
+  store_nbr: 44
+  density_threshold: 0.7
+  first_test_item_nbr: 502331
