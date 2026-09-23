@@ -154,3 +154,59 @@ everything anyway.
 **Numbers:** none yet — this changes `backtest.py`'s design, not anything
 already run. Both fixes are folded into the Phase 2 (multi-SKU backtest)
 implementation plan in `docs/PROJECT_OVERVIEW.md` §6.
+
+---
+
+## 2026-09-23 — Phase 1 (Section 8 minimal pipeline) implemented and run for real
+
+**What:** Built the full predict → gate → order → explain pipeline
+(`order.py`, `gate.py`, `containment.py`, `features.py`, `model.py`,
+`explain.py`, `run_slice.py`) test-first, starting with the deterministic
+seams (order arithmetic, gate threshold, numeral containment) since those
+don't need a model or an API key to test. 40 unit tests, all passing.
+
+**Numbers (real run, store 44 / item 502331, no synthetic data):**
+- Predicting day 84 from days 1–83: P10=55.5, P50=81.3, P90=107.2,
+  `rel_width`=0.636 → **abstained** (threshold 0.60). Actual next-day sales
+  turned out to be 42 — well outside even the P10 estimate — so on this one
+  sample, abstaining was the right call. (One sample proves nothing on its
+  own; noted here because it's a concrete, real illustration of why the gate
+  exists, not a claimed result.)
+- Tried 6 other split points (train_rows 40/50/60/70/75/80): all gave
+  `rel_width` between 0.20 and 0.56, all below threshold, all produced a
+  normal case recommendation (6–13 cases depending on split) — confirms
+  both the abstain and non-abstain branches work on real data, not just in
+  unit tests with synthetic numbers.
+- No `OPENROUTER_API_KEY` configured yet, so every run so far has exercised
+  the deterministic template fallback in `explain.py`, not a real LLM call.
+  That fallback path is fully verified; the actual gpt-4o-mini call is
+  still unexercised end-to-end.
+
+**Code review (medium effort) before commit caught 4 issues, all fixed:**
+- `containment.py` only added `int`/`float` fact-block values to the
+  allowed-numbers set, so a numeral embedded in a *string* field (like
+  `sku_name`) was never allowed. Concretely confirmed: this SKU's name is
+  literally "item 502331" (Favorita has no product names, only item
+  numbers), so almost any real LLM sentence mentioning the SKU by name
+  would have been wrongly flagged as inventing a number and silently
+  replaced by the template — indistinguishable from the L1 check actually
+  catching a hallucination. Fixed by also extracting numerals from string
+  values into the allowed set.
+- `run_slice.py`'s pass/fail check asserted `units % 12 == 0` with a
+  hardcoded literal instead of reading `case_pack` from config — would have
+  silently stopped validating anything the moment `case_pack` was changed
+  from its current value. Fixed to check against the configured value.
+- `model.py`'s `predict_quantiles` hardcoded dict keys `0.1`/`0.5`/`0.9`
+  instead of deriving low/mid/high from whatever quantiles were actually
+  fit — editing `config.yaml`'s `model.quantiles` would have raised a
+  confusing `KeyError` far from the actual change. Fixed to sort the
+  models dict's own keys.
+- `load_sku_slice` re-read the full 31.7M-row parquet file from disk on
+  every call (measured: 1.26s/call) instead of caching it — harmless for
+  one SKU, but Phase 2's planned loop over 537 SKUs (times 3 rolling-origin
+  folds) would have cost roughly 11 minutes of pure redundant I/O before
+  any model fitting even started. Fixed with an `lru_cache` on the raw
+  parquet load.
+
+**Rejected nothing this round** — all 4 findings were clear-cut bugs with a
+cheap, obvious fix, not judgment calls with a real alternative to weigh.
