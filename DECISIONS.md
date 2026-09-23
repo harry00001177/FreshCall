@@ -238,3 +238,15 @@ tightening the system prompt in `explain.py` before the L1/L2 explanation
 harness (Section 7 eval check 4) is run, since a technically-correct but
 badly-phrased sentence is exactly the kind of thing the L2 judge step
 exists to catch.
+
+**Fixed same day:** rewrote the system prompt to require the literal opening
+"ORDER {cases} cases." followed by one short reason clause, with one
+good/bad worked example inline (few-shot). Why a worked example instead of
+just a stronger instruction: the first prompt already said "single, plain
+sentence" and still produced a report-style sentence — telling the model
+what "good" looks like concretely worked where describing it abstractly
+didn't. Re-ran against the real API (not mocked): output changed from
+`"The recent average for item 502331 is 99.9, with 13 recommended cases
+and a last same weekday sales of 161.0."` to `"ORDER 13 cases. Recent
+average 99.9, lower than last week's 161.0."` — matches the target style,
+still passes containment, all 40 tests still green.
