@@ -117,3 +117,40 @@ D3/D4 decisions instead of guessing.
 scheme than the handoff assumed — a plaintext token at `~/.kaggle/access_token`
 rather than the legacy `~/.kaggle/kaggle.json` (username+key). Both files were
 written; the legacy one is harmless but unused by this CLI version.
+
+---
+
+## 2026-09-23 — Two eval-methodology fixes from instructor feedback on Milestone 1
+
+**What:** Course instructor (Ajay Vikram Singh) sent formative feedback on the
+submitted Problem Statement. Two of the points identified a real gap in the
+eval design that we hadn't caught in our own grill — adopted both before
+writing `backtest.py`, since fixing them after the fact would mean rerunning
+everything anyway.
+
+**Decisions made:**
+- **Switch from a single 31-day holdout to 3-fold rolling-origin backtesting**
+  (e.g. test windows 2017-06-16→07-15, 2017-07-16→08-15, and one earlier
+  window such as 2017-05-16→06-15, each preceded by its own training
+  cutoff). Why: a single 31-day window can
+  be dominated by one coincidental event (a holiday weekend) inside it, so a
+  good or bad result proves nothing about the method — it might just prove
+  something about that specific month. Three folds reported separately (not
+  averaged into one number) show whether the result is stable across time or
+  whether one fold is an outlier worth investigating on its own. Cost: near
+  zero — same code, run three times over three windows.
+- **Naive_seasonal baseline must be measured on the exact same auto-answered
+  SKU-days as the model, not on the full dataset.** Why: Case Match Rate is
+  reported only on SKU-days where the gate didn't abstain (the "easy" days
+  by construction — the model routed the hard days to a human). If the
+  baseline's accuracy is measured on *all* days while the model's is measured
+  only on the *easy* subset it chose to answer, the comparison is invalid —
+  any improvement could be entirely selection bias (the model looks better
+  because it only competed on cases it found easy), not a genuine skill
+  difference. Fixing this means `backtest.py` must compute
+  `naive_seasonal` accuracy conditional on the same abstain mask the model
+  produced, every time CMR is reported.
+
+**Numbers:** none yet — this changes `backtest.py`'s design, not anything
+already run. Both fixes are folded into the Phase 2 (multi-SKU backtest)
+implementation plan in `docs/PROJECT_OVERVIEW.md` §6.
