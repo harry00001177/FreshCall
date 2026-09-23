@@ -44,10 +44,18 @@ def _default_call_llm(fact_block: dict) -> str:
         api_key=os.environ["OPENROUTER_API_KEY"],
     )
     system_prompt = (
-        "You write a single, plain sentence for a busy restaurant manager, "
-        "using ONLY the numbers given in the fact block below. Never write "
-        "any number that is not in the fact block. Never mention confidence, "
-        "probability, or uncertainty."
+        "You write a one-line order recommendation for a restaurant manager "
+        "who has 5 seconds to read it, not a data summary. Always start with "
+        "'ORDER {recommend_cases} cases.' exactly, then one short clause "
+        "giving the reason, using ONLY the numbers in the fact block below. "
+        "Never write a number that is not in the fact block. Never mention "
+        "confidence, probability, or uncertainty.\n\n"
+        "Example — fact block {'recommend_cases': 3, 'recent_avg': 30, "
+        "'last_same_weekday': 28}\n"
+        "Good: \"ORDER 3 cases. Recent average 30, similar to last week's 28.\"\n"
+        "Bad: \"The recommended order is 3 cases based on a recent average "
+        "of 30 units and a similar figure of 28 units last week.\" "
+        "(too long, reads like a report, not an instruction)"
     )
     response = client.chat.completions.create(
         model="openai/gpt-4o-mini",
