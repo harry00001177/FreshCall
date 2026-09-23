@@ -210,3 +210,31 @@ don't need a model or an API key to test. 40 unit tests, all passing.
 
 **Rejected nothing this round** — all 4 findings were clear-cut bugs with a
 cheap, obvious fix, not judgment calls with a real alternative to weigh.
+
+---
+
+## 2026-09-23 — Real gpt-4o-mini call verified end-to-end (not just the fallback)
+
+**What:** Configured `OPENROUTER_API_KEY` in a local `.env` (gitignored, never
+committed) and ran `explain.py`'s real LLM path for the first time — every
+run before this had silently used the deterministic template fallback
+because no key was configured.
+
+**Numbers (real API call, not the template):**
+- item 502331, order case: LLM returned `"The recent average for item 502331
+  is 99.9, with 13 recommended cases and a last same weekday sales of
+  161.0."` — passed numeral containment (7 pass verified this specific
+  string), confirming the fix to `containment.py` (string-embedded numerals
+  allowed) actually works against a real, non-mocked model response, not
+  just the unit test's hand-written example.
+
+**Observation to revisit, not a bug:** the wording is grammatically correct
+but doesn't match the target style from the Problem Statement's example
+output ("ORDER 7 cases. Recent average 82, similar to last Tuesday's 79.") —
+it reads more like a data summary than an instruction a manager scans in 2
+seconds. This is a prompt-engineering quality issue, not a correctness
+issue (L1 containment is the hard requirement and it passed) — worth
+tightening the system prompt in `explain.py` before the L1/L2 explanation
+harness (Section 7 eval check 4) is run, since a technically-correct but
+badly-phrased sentence is exactly the kind of thing the L2 judge step
+exists to catch.
