@@ -643,3 +643,51 @@ only when P50 is within some distance of a boundary) could trade recall
 for a lower abstain rate, but that is a new experiment with a threshold to
 choose, would need its own pre-registration, and is noted as future work,
 not done.
+
+---
+
+## 2026-09-24 — Error decomposition: the ceiling isn't the problem, the price is
+
+**What:** Descriptive analysis (`run_error_decomposition.py`, new files
+only, results files read-only) of the model's would-be errors — SKU-days
+where the P50-implied order ≠ `hindsight_demand_order` — split into
+*catchable* (P10–P90 spans a case boundary, so an interval-based gate can
+flag it) vs *uncaught* (whole interval implies one case count, actual
+landed outside it; no interval-based gate can flag it), and uncaught by
+direction. Simplified from the handoff's three buckets: the "novel
+feature vector" bucket needs the novelty check, which was never built;
+observed holidays are used as a rough stand-in.
+
+**Numbers (real run):**
+
+| | store 44 | store 49 |
+|---|---|---|
+| would-be errors | 12,792 (32.6% of SKU-days) | 11,546 (28.8%) |
+| catchable | 94.6% | 93.8% |
+| uncaught, over-ordered (waste) | 3.1% | 3.0% |
+| uncaught, under-ordered (stockout) | 2.2% | 3.2% |
+| observed holidays in test windows | 2 days (2017-05-26, 2017-08-11) | same |
+| share of SKU-days on holidays | 2.2% | 2.2% |
+| share of uncaught errors on holidays | 5.1% | 2.6% |
+| error rate: holiday vs other days | 37.1% vs 32.5% | 30.6% vs 28.7% |
+
+Note: "catchable share" equals the case-straddle gate's recall by
+construction (it abstains on exactly these rows), so this is not an
+independent confirmation of the 94% recall figure — it's the same fact
+viewed as a ceiling.
+
+**Reading:**
+- **Detection is not the bottleneck.** Only ~5–6% of errors are "confident
+  and wrong" — the interval-based ceiling on abstention is high (~94%).
+  So the `rel_width` gate failed by using the wrong unit, not because
+  errors are fundamentally undetectable.
+- **The price is the bottleneck.** Catching those errors requires flagging
+  every boundary-straddling interval, and most of those do *not* end in an
+  error (precision ~36–40%). At ~12 units/day median against a 12-unit
+  case, most decisions sit near a boundary — hence the 74–78% abstain rate.
+  The problem is attention cost, not detection.
+- **Uncaught errors split roughly evenly** between over-ordering (waste)
+  and under-ordering (stockout): no systematic bias.
+- **Holidays: suggestive at most.** Store 44 shows uncaught errors ~2.3x
+  over-represented on holidays; store 49 barely (1.2x). Two holiday days
+  per store is far too thin to support a calendar-rule claim either way.
