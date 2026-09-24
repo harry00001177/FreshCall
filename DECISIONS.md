@@ -851,3 +851,48 @@ SKU-days each). Original pre-registered numbers remain primary.
 all seven non-trivial (order 1–4 cases, real averages). Harry's labels
 pending — sentences deliberately not commented on here to keep his
 labelling blind.
+
+---
+
+## 2026-09-24 — L2 judge results, and a "true but misleading" sentence nobody flagged
+
+**Harry's batch 2 labels (blind):** faithful 7/7, usable 7/7.
+
+**L2 judge** (`anthropic/claude-haiku-4.5` via OpenRouter, Harry's choice —
+different vendor from the gpt-4o-mini generator; code commit `1008d65`
+before the run; listed price $1 / $5 per million input / output tokens):
+over all 17 sentences, faithful 17/17, usable 17/17, 0 unparseable, **0
+disagreements with Harry** on either question. L1 on raw LLM output over
+both batches: 14/14.
+
+**What 0 disagreements does and doesn't show:** every sentence was
+labelled "yes" by both, so the judge raised no false alarms here — but
+with no bad sentence in the set, this says nothing about whether it
+*would catch* one. Its detection ability is unmeasured.
+
+**Finding — case 16, a faithful sentence that points the wrong way:**
+"ORDER 1 case. Recent average 61.6, significantly higher than last week's
+21.0." Every number is correct and every comparison is true, so it
+rightly passes L1, Harry and the judge. But the stated reason argues for
+ordering *more*, while the order is small. Underlying data (item 1149069,
+store 44, 2017-06-20): a weekend spike (95 / 169 / 90 units Fri–Sun)
+pulled the 7-day average to 61.6; Monday sold 8; the model forecast
+P50 = 12 → 1 case; actual was 2 → 1 case. **The model was right** (naive,
+2 cases, was wrong) — but a manager reading that sentence would likely
+override upward and over-order: the exact waste the product exists to
+prevent. This is the "true-but-irrelevant explanation" silent failure
+flagged in the Problem Statement's risks section, now observed for real.
+
+**Why no check caught it:** L1 checks numbers, and both L2 questions ask
+whether the sentence is *supported* and *readable* — none asks whether the
+stated reason *supports the order*. And the cause isn't the LLM: it
+faithfully paraphrased a fact block whose "recent average" is distorted by
+weekly seasonality. The fact-block design decides whether an explanation
+helps.
+
+**Not changed now** (mid-evaluation). Candidate follow-ups for Harry: a
+third rubric question ("does the stated reason point the same way as the
+order?"); a negative-control test for the judge (deliberately flawed
+sentences, including one like case 16) to measure whether it catches bad
+sentences at all; a fact block without the seasonally-distorted 7-day
+mean.
