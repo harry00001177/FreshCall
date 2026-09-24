@@ -31,6 +31,10 @@ class TestSelectCases:
         assert ((border >= 0.30) & (border <= 0.60)).all()
         assert (cases.loc[cases["stratum"] == "abstain", "rel_width"] > 0.60).all()
 
+    def test_counts_can_skip_a_stratum(self):
+        cases = select_cases(_results(), threshold=0.60, seed=42, counts=(4, 3, 0))
+        assert cases["stratum"].value_counts().to_dict() == {"confident": 4, "borderline": 3}
+
     def test_same_seed_gives_the_same_cases(self):
         a = select_cases(_results(), threshold=0.60, seed=42)
         b = select_cases(_results(), threshold=0.60, seed=42)

@@ -30,16 +30,29 @@ def fact_inputs(sales: pd.DataFrame, item_nbr: int, date: pd.Timestamp) -> tuple
     return round(float(row["rolling_7_mean"]), 1), round(float(row["lag_7"]), 1)
 
 
-def main():
+def select_batch(batch: int, threshold: float) -> tuple[pd.DataFrame, str, int]:
+    """Batch 1: the original pre-registered draw. Batch 2 (supplementary,
+    pre-registered after batch 1 was 6/7 all-zero inputs): P50 >= 1 only,
+    batch 1's rows excluded, answered strata only."""
+    results = pd.read_parquet(RESULTS)
+    if batch == 1:
+        return select_cases(results, threshold=threshold, seed=42), f"{OUT_DIR}/cases.csv", 1
+    batch1 = pd.read_csv(f"{OUT_DIR}/cases.csv", parse_dates=["date"])
+    seen = set(zip(batch1["item_nbr"], batch1["date"]))
+    pool = results[(results["p50"] >= 1) & ~pd.Series(list(zip(results["item_nbr"], results["date"]))).isin(seen).values]
+    return select_cases(pool, threshold=threshold, seed=42, counts=(4, 3, 0)), f"{OUT_DIR}/cases_batch2.csv", len(batch1) + 1
+
+
+def main(batch: int = 1):
     cfg = yaml.safe_load(open("config.yaml"))
     threshold = cfg["gate"]["rel_width_threshold"]
-    cases = select_cases(pd.read_parquet(RESULTS), threshold=threshold, seed=42)
+    cases, out_path, first_case = select_batch(batch, threshold)
 
     raw_sales = pd.read_parquet("data/derived_perishable_train.parquet")
     sales = raw_sales[raw_sales["store_nbr"] == cfg["slice"]["store_nbr"]]
 
     records = []
-    for i, c in enumerate(cases.itertuples(), start=1):
+    for i, c in enumerate(cases.itertuples(), start=first_case):
         recent_avg, last_same_weekday = fact_inputs(sales, c.item_nbr, c.date)
         abstain = should_abstain(c.p10, c.p50, c.p90, threshold)
         cases_n = None if abstain else recommended_cases(c.p50, cfg["safety"], cfg["on_hand"], cfg["case_pack"])
@@ -66,18 +79,22 @@ def main():
         })
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    pd.DataFrame(records).to_csv(f"{OUT_DIR}/cases.csv", index=False)
+    pd.DataFrame(records).to_csv(out_path, index=False)
 
     llm_rows = [r for r in records if r["stratum"] != "abstain"]
+    abstain_rows = [r for r in records if r["stratum"] == "abstain"]
     print(f"L1 on raw LLM output: {sum(r['l1_pass'] for r in llm_rows)}/{len(llm_rows)} pass")
-    print(f"Abstain texts with no digits: {sum(r['l1_pass'] for r in records if r['stratum'] == 'abstain')}/3\n")
+    if abstain_rows:
+        print(f"Abstain texts with no digits: {sum(r['l1_pass'] for r in abstain_rows)}/{len(abstain_rows)}")
+    print()
     for r in records:
         print(f"[{r['case']}] {r['stratum']:<10} rel_width={r['rel_width']:<6} {r['fact_block']}")
         print(f"     shown ({r['shown_source']}): {r['shown_text']}")
         if r["raw_llm_output"] and r["shown_source"] != "LLM":
             print(f"     raw LLM output: {r['raw_llm_output']}")
-    print(f"\nWrote {OUT_DIR}/cases.csv")
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else 1)
