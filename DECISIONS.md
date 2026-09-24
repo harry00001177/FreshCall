@@ -381,3 +381,78 @@ and report the split honestly — "this approach helps on higher-volume
 SKUs, actively hurts on low-volume ones" — which is itself a defensible,
 mature finding for the final report, arguably more interesting than a
 single clean headline number.
+
+---
+
+## 2026-09-24 — CORRECTION to the entry above: the root cause was misdiagnosed
+
+**The "small orders (0–2 cases)" explanation above is wrong.** Re-audit
+split the answered rows by forecast size instead of by hindsight bucket
+(real run, same `backtest_results.parquet`):
+
+| threshold | rows with P50 < 1 unit | rows with P50 ≥ 1 unit |
+|---|---|---|
+| 0.60 | 54% of answered: model right 15%, **naive right 100%**, actual = 0 in 100% | model **39%** vs naive 32% |
+| 1.00 | 13% of answered: model right 13%, **naive right 100%**, actual = 0 in 100% | model **53%** vs naive 46% |
+
+On every SKU-day with a real (≥1 unit) forecast, the model beats
+Naive_seasonal by ~7pp on the same subset, at both thresholds. The entire
+"naive wins" reversal comes from near-zero forecasts on days where actual
+sales were exactly 0. Two mechanisms compound:
+
+1. **Rounding:** `ceil(0.001 / 12) = 1` — a forecast of a thousandth of a
+   unit becomes a full case. Naive copies last week's real integer (0) and
+   is right for free.
+2. **Gate floor:** `rel_width = (P90−P10) / max(P50, 1)` — when P50 < 1 the
+   denominator is pinned to 1, so near-zero forecasts with near-zero
+   absolute width read as maximally confident and are *always answered*.
+   The gate systematically routes exactly the rows the rounding rule gets
+   wrong into the answered set.
+
+The earlier split by hindsight 0–2 vs 3+ lumped "actual = 0" in with
+"actual = 1–2 cases", which hid this. The proposed volume filter was aimed
+at the wrong cause and is dropped (see pre-registration below).
+
+---
+
+## 2026-09-24 — PRE-REGISTRATION of the fix, committed before any code changes
+
+Written and committed *before* touching code or re-running, so the git
+history shows the criteria weren't chosen after seeing the new numbers.
+This fix was discovered post-hoc (after seeing bad results), which is
+exactly why it's pinned down here first.
+
+**The fix (and nothing else):**
+1. `recommended_cases` rounds the demand forecast to the nearest whole unit
+   (half-up) before the case ceiling. Justification is definitional, not
+   result-driven: §3.2's filter chain already restricted the SKU pool to
+   items sold only in whole units, so a forecast of 0.4 units *means* 0
+   units in this domain; ceiling a fractional forecast was inconsistent
+   with our own data definition.
+2. Quantile predictions are clipped at 0 (1.3% of P10s were negative;
+   demand cannot be).
+
+**Explicitly NOT changed:** the gate formula (including the `max(P50, 1)`
+floor), the SKU pool (all 426, no volume filter), the model, its
+hyperparameters, the folds, `case_pack`, `hindsight_demand_order`,
+`naive_seasonal_order`.
+
+**What will be reported after the re-run, whatever it shows:**
+- Before-fix numbers (preserved in `data/backtest_results_prefix.parquet`)
+  side by side with after-fix numbers — the before-fix run stays in the
+  record, not replaced.
+- Per-fold table at the configured threshold (0.60).
+- Sweep at thresholds 0.60 / 0.70 / 0.85 / 1.00 / 1.20: abstain rate,
+  model CMR and naive CMR on the same answered subset, coverage,
+  abstention precision, error_base_rate, lift.
+- The same P50 < 1 vs ≥ 1 split as above, and a hindsight split of
+  0 / 1–2 / 3+ cases.
+
+**Decision rule for the volume-filter idea (from the 2026-09-24 grill):**
+only added as a clearly labelled post-hoc analysis if, after the fix,
+naive still beats the model in a hindsight bucket other than 0. Otherwise
+it's not done.
+
+**No further tuning after this re-run.** If abstention precision is still
+below random after the fix, that stands as the reported result for the
+final submission.
