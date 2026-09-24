@@ -25,7 +25,8 @@ def predict_quantiles(models: dict, X) -> tuple[float, float, float]:
     p10 = models[low_q].predict(X)[0]
     p50 = models[mid_q].predict(X)[0]
     p90 = models[high_q].predict(X)[0]
-    return enforce_non_crossing(p10, p50, p90)
+    # quantile loss has no non-negativity constraint; demand does
+    return tuple(max(0.0, float(p)) for p in enforce_non_crossing(p10, p50, p90))
 
 
 def enforce_non_crossing(p10: float, p50: float, p90: float) -> tuple[float, float, float]:

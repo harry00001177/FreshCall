@@ -20,6 +20,22 @@ class TestEnforceNonCrossing:
         assert enforce_non_crossing(p10=10, p50=20, p90=30) == (10, 20, 30)
 
 
+class _FixedModel:
+    def __init__(self, value):
+        self.value = value
+
+    def predict(self, X):
+        return np.array([self.value])
+
+
+class TestPredictQuantilesClipping:
+    def test_negative_quantiles_are_clipped_to_zero(self):
+        # demand cannot be negative; quantile GBR has no such constraint
+        models = {0.1: _FixedModel(-4.8), 0.5: _FixedModel(2.0), 0.9: _FixedModel(6.0)}
+        p10, p50, p90 = predict_quantiles(models, X=None)
+        assert (p10, p50, p90) == (0.0, 2.0, 6.0)
+
+
 class TestFitPredict:
     def test_fits_and_predicts_three_ordered_quantiles(self):
         rng = np.random.default_rng(42)

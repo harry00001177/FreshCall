@@ -26,6 +26,22 @@ class TestRecommendedCases:
     def test_never_returns_negative_cases(self):
         assert recommended_cases(demand=0, safety=0, on_hand=100, case_pack=12) == 0
 
+    def test_near_zero_forecast_orders_nothing(self):
+        # SKUs are integer-sold, so 0.001 units means 0 units -- not a full case
+        assert recommended_cases(demand=0.001, safety=0, on_hand=0, case_pack=12) == 0
+
+    def test_forecast_below_half_a_unit_rounds_to_zero(self):
+        assert recommended_cases(demand=0.49, safety=0, on_hand=0, case_pack=12) == 0
+
+    def test_half_a_unit_rounds_up_to_one_unit_then_one_case(self):
+        assert recommended_cases(demand=0.5, safety=0, on_hand=0, case_pack=12) == 1
+
+    def test_forecast_just_over_a_case_rounds_to_nearest_unit_first(self):
+        # 12.4 units -> 12 units -> exactly 1 case, not 2
+        assert recommended_cases(demand=12.4, safety=0, on_hand=0, case_pack=12) == 1
+        # 12.5 units -> 13 units -> 2 cases
+        assert recommended_cases(demand=12.5, safety=0, on_hand=0, case_pack=12) == 2
+
     def test_units_are_always_a_whole_multiple_of_case_pack(self):
         for demand in range(0, 100, 7):
             cases = recommended_cases(demand=demand, safety=0, on_hand=0, case_pack=12)
