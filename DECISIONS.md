@@ -739,3 +739,38 @@ judge's pass rates; judge–human disagreement count per question.
 **Data handling:** the 10-case sheet contains a few derived numbers from
 Kaggle data per row, so it's written under `data/` (gitignored) until
 Harry decides whether a 10-row derived sample may be committed.
+
+---
+
+## 2026-09-24 — Harness batch 1 generated; it exposed a candidate-selection flaw
+
+**Harness batch 1 (real run, 7 real gpt-4o-mini calls):** L1 on raw LLM
+output 7/7 pass; abstain texts 3/3 digit-free. But 6 of the 7 LLM cases
+are the same trivial input — recent average 0, last week 0, order 0 cases
+— so the LLM was really only tested on one non-trivial sentence (case 5:
+"ORDER 4 cases. Recent average 36.9, close to last week's 39.0."). Cause:
+at threshold 0.60 most answered SKU-days are near-zero forecasts (see the
+2026-09-24 correction), and those have tiny `rel_width`, so the
+"confident" and "borderline" strata are dominated by them. Reported as
+is; not re-sampled. Harry's L2 labels still pending.
+
+**Flaw found while inspecting batch 1:** case 3 is item 958015, which sold
+on exactly one day in its whole history. The candidate filter computes
+density over each SKU's *own* active span and requires the first sale to
+be early enough, but never requires the SKU to still be selling during
+the test windows. SKUs discontinued before the test period then get
+zero-filled through it — a run of trivially predictable zero days.
+
+| | store 44 | store 49 |
+|---|---|---|
+| candidates whose last sale was before 2017-05-16 | 21 of 426 | 21 of 436 |
+| their last-sale dates (min / median / max) | 2013-08-14 / 2017-04-02 / 2017-05-13 | 2014-07-25 / 2017-04-02 / 2017-05-15 |
+| share of backtest SKU-days from them | 4.9% | 4.8% |
+| actual = 0 within them / overall | 100% / 10.2% | 100% / 10.3% |
+
+**Why it matters:** these rows are free points for both model and naive,
+so the model-vs-naive *difference* is barely affected — but they inflate
+the random base rate's denominator with non-errors that any gate answering
+zeros "gets right", which can inflate a gate's lift. Pre-registered
+results stand as reported; whether a sensitivity check excluding these
+SKUs should be added is an open decision for Harry.
