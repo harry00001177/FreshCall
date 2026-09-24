@@ -691,3 +691,51 @@ viewed as a ceiling.
 - **Holidays: suggestive at most.** Store 44 shows uncaught errors ~2.3x
   over-represented on holidays; store 49 barely (1.2x). Two holiday days
   per store is far too thin to support a calendar-rule claim either way.
+
+---
+
+## 2026-09-24 — PRE-REGISTRATION: L1/L2 explanation harness (Section 7 eval check 4)
+
+Committed before any harness code exists and before any explanation
+sentence for these cases has been generated.
+
+**Deviation from the 2026-09-22 plan, stated plainly:** that entry said
+the case-selection rule would be written *before any backtest results
+existed*. That didn't happen — backtests have run. What the rule must
+protect against is picking cases after seeing how good the *sentences*
+are, and no sentence has been generated yet, so fixing the rule now still
+meets that purpose. The rule also lives in a new module rather than
+`backtest.py`, to leave existing files untouched.
+
+**Selection (fixed seed 42), from store 44's post-fix backtest results,
+stratified by `rel_width` against the configured threshold 0.60:**
+- confident: `rel_width` < 0.30 → 4 cases
+- borderline, still answered: 0.30 ≤ `rel_width` ≤ 0.60 → 3 cases
+- abstained: `rel_width` > 0.60 → 3 cases (template path, no LLM call)
+
+**Fact block per case:** `sku_name` "item N", `abstain`, `recommend_cases`
+(from P50, post-fix rounding), `recent_avg` (mean of the 7 days before the
+date, rounded to 1dp), `last_same_weekday` (units 7 days earlier) — same
+fields and rounding as `run_slice.py`.
+
+**L1 (automated):** numeral containment on the LLM's *raw* output, before
+any fallback — the shown sentence always passes by construction (the
+system swaps a failing sentence for the template), so checking it would
+measure nothing. Abstain cases: check the shown text has no digits.
+
+**L2 human labels (Harry, all 10, before seeing any judge output):** two
+yes/no questions per shown sentence —
+1. *Faithful:* says nothing the fact block doesn't support (incl.
+   direction words like "higher"/"lower").
+2. *Usable:* opens with the order (or a clear hand-back), readable in ~5
+   seconds, no talk of confidence/probability.
+
+**L2 judge:** run only after Harry's labels are saved; same two questions;
+model choice left to Harry (it spends API budget) — recommendation is a
+different, stronger model than the generator, to avoid a model grading
+its own writing. Reported: L1 pass rate on raw output; Harry's pass rates;
+judge's pass rates; judge–human disagreement count per question.
+
+**Data handling:** the 10-case sheet contains a few derived numbers from
+Kaggle data per row, so it's written under `data/` (gitignored) until
+Harry decides whether a 10-row derived sample may be committed.
