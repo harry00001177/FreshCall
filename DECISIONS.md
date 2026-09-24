@@ -456,3 +456,87 @@ it's not done.
 **No further tuning after this re-run.** If abstention precision is still
 below random after the fix, that stands as the reported result for the
 final submission.
+
+---
+
+## 2026-09-24 — Post-fix full re-run: results, reported exactly as pre-registered
+
+**What:** Re-ran all 426 SKUs × 3 folds (39,192 SKU-day predictions) with
+the pre-registered fix only (code commit `4912d93`, pre-registration
+commit `2a1d668`, both pushed before the re-run finished). Tables below
+come from `report_backtest.py`; before-fix numbers are the ones already
+logged above (raw file kept as `data/backtest_results_prefix.parquet`).
+
+**Per fold at the configured threshold (0.60):**
+
+| fold | N | answered | abstain | model CMR | naive CMR | coverage |
+|---|---|---|---|---|---|---|
+| May–Jun | 13,206 | 667 | 94.9% | 66.9% | 63.3% | 77.1% |
+| Jun–Jul | 12,780 | 809 | 93.7% | 70.8% | 69.0% | 76.7% |
+| Jul–Aug | 13,206 | 857 | 93.5% | 77.5% | 73.7% | 79.0% |
+
+Model ahead of naive in all three folds, so the direction isn't one
+window's coincidence (the reason for rolling-origin in the first place).
+
+**Sweep, before vs after the fix (all folds pooled):**
+
+| threshold | abstain | model CMR before → after | naive CMR (unchanged) | relative improvement after | abstention precision | random base | lift before → after |
+|---|---|---|---|---|---|---|---|
+| 0.60 | 94.0% | 25.8% → **72.1%** | 69.1% | +4.3% | 32.9% | 32.6% | 0.94x → 1.01x |
+| 0.70 | 90.9% | — → 64.6% | 59.4% | +8.8% | 32.4% | 32.6% | — → 0.99x |
+| 0.85 | 83.0% | — → 60.3% | 54.5% | +10.6% | 31.2% | 32.6% | — → 0.96x |
+| 1.00 | 73.3% | 47.4% → **59.3%** | 53.0% | +11.9% | 29.7% | 32.6% | 0.87x → 0.91x |
+| 1.20 | 58.5% | — → 61.4% | 55.1% | +11.4% | 28.4% | 32.6% | — → 0.87x |
+
+Coverage (P10–P90 contains actual) is 77.6% at every threshold (it's a
+property of the interval, not the gate), vs 80% nominal. Naive CMR is
+identical before and after, as expected (naive wasn't touched) — a sanity
+check that the fix changed only what it was meant to change.
+
+**Splits (answered rows, model CMR vs naive CMR):**
+
+| split | threshold 0.60 | threshold 1.00 |
+|---|---|---|
+| P50 < 1 | 99.7% vs 99.8% (n=1,271) | 99.7% vs 99.7% (n=1,397) |
+| P50 ≥ 1 | 39.2% vs 32.4% (n=1,062) | 53.1% vs 45.8% (n=9,050) |
+| hindsight 0 | 99.6% vs 99.8% | 96.3% vs 96.7% |
+| hindsight 1–2 | 51.1% vs 41.1% | 62.7% vs 54.5% |
+| hindsight 3+ | 36.1% vs 29.9% | 37.4% vs 31.4% |
+
+**Reading, against the pre-registered criteria:**
+1. **The fix did what it was meant to and nothing more.** Near-zero
+   forecasts now tie with naive (~99.7% both) instead of losing 15% vs
+   100%. The artifact is gone.
+2. **The forecasting layer adds real but modest value.** Model beats naive
+   on the fair same-subset comparison at every threshold, in every fold,
+   and in every non-zero hindsight bucket. Pooled relative improvement is
+   +4% to +12% — **below the Problem Statement's ≥15% target**, which was
+   defined on the pooled auto-answered slice. (The P50 ≥ 1 subset alone
+   shows +16% to +21%, but choosing that subset as the headline *because*
+   it crosses 15% would be exactly the selective reporting the
+   pre-registration exists to prevent. Reported as a split, not a
+   headline.)
+3. **The abstain gate does not work as designed.** Abstention precision is
+   at or below random at every threshold (1.01x down to 0.87x) and falls
+   as the gate gets more selective. The Section 7 abandon condition is
+   met; per the pre-registration, this stands as the reported result.
+   `rel_width` is a roughly calibrated measure of demand volatility, but
+   not a useful predictor of which case-level decisions will be wrong.
+4. **The ~15% abstain design point is not reached** anywhere in the
+   pre-registered sweep (lowest is 58.5% at 1.20). Not extended further:
+   the pre-registration said no further tuning, and the lift trend
+   *declines* as the threshold rises, so finding the 15% threshold would
+   not rescue the gate's usefulness — though that's an inference from the
+   trend, not a measured result.
+5. **Volume filter: not done.** Pre-registered rule: only if naive still
+   beats the model in a hindsight bucket other than 0. It doesn't — the
+   model wins both 1–2 and 3+ at both thresholds.
+
+**What this means for the project's story:** the honest conclusion is
+"a quantile forecaster beats last-week's-order by a modest, consistent
+margin, and its intervals are roughly calibrated — but interval width,
+the signal the whole abstention design rests on, does not identify which
+orders will be wrong." That is a negative result on the project's core
+hypothesis, arrived at by a method (fair comparison, rolling folds,
+pre-registration, correcting our own misdiagnosis) that is itself the
+strongest thing to show.
