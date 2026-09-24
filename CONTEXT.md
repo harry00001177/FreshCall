@@ -49,5 +49,17 @@ Terms only. No implementation details here — see `src/` and `config.yaml`.
   comparison). Not a claim that real stores should run with zero safety
   stock — a Layer A simplification.
 - **rel_width** — `(P90 - P10) / max(P50, 1)`, the relative width of the
-  predicted demand interval. The sole uncertainty signal driving the abstain
-  gate.
+  predicted demand interval, in demand units. The signal of the original
+  (configured) abstain gate — which failed its evaluation.
+- **case-straddle** — the experimental gate signal: P10, P50 and P90 imply
+  different case counts. Uncertainty measured in the manager's decision
+  unit (cases), not in demand units.
+- **would-be error** — a SKU-day where the P50-implied order differs from
+  `hindsight_demand_order`, whether or not the gate abstained. Split into
+  **catchable** (the interval straddles a case boundary) and **uncaught**
+  (the whole interval implies one case count and actual sales fell
+  outside it).
+- **abstention precision** — share of abstained SKU-days that were
+  would-be errors. Only meaningful against **error_base_rate** (the
+  would-be error rate across all SKU-days, i.e. what a random gate would
+  achieve); their ratio is the **lift**.

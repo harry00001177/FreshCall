@@ -3,7 +3,6 @@ predict -> gate -> arithmetic -> explain. This script's job is to prove the
 pipeline has no structural bug, not to produce a defensible accuracy number
 (see docs/PROJECT_OVERVIEW.md phase 1 vs phase 2)."""
 
-import sys
 import time
 from functools import lru_cache
 
