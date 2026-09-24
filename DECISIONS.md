@@ -308,3 +308,76 @@ whether a boundary-distance signal (how close P50 sits to the nearest
 case-pack multiple) predicts case-rounding errors better than `rel_width`
 does — a genuinely different idea from "widen or narrow the same
 threshold," not yet implemented.
+
+---
+
+## 2026-09-24 — Full 426-SKU backtest: the 30-SKU pilot's good news does not replicate at scale
+
+**What:** Ran the same `backtest.py` pipeline across all 426 store-44
+candidates (not just the 30-SKU pilot), 3 folds each — 39,192 real
+SKU-day predictions, ~13x the pilot's sample size. This was the planned
+"check whether Finding 1/2 hold at scale" step from the 2026-09-24 pilot
+entry above. They mostly don't, and the investigation into *why* surfaced
+a real, previously-unconsidered gap in the SKU selection criteria.
+
+**Numbers (real run, not estimated):**
+
+| metric | 30-SKU pilot (threshold 0.60) | 426-SKU full (threshold 0.60) | 426-SKU full (threshold 1.00) |
+|---|---|---|---|
+| abstain rate | 74.5% | **94.0%** | 73.4% (not ~15% — the pilot's threshold-1.00 finding does not transfer) |
+| model CMR (answered subset) | 61.3% | **25.8%** | 47.4% |
+| naive CMR (same subset) | 55.2% | **69.1%** | 53.0% |
+| abstention precision vs random | 1.01x | 0.94x | 0.87x |
+
+At full scale, **Naive_seasonal beats the model on the fair (same-subset)
+comparison at every threshold tested** — the reverse of the pilot's
+headline finding. Abstention precision confirms the pilot's Finding 2
+(worse than random), now on a sample large enough (39,192 vs 2,760) that
+it's not plausibly noise.
+
+**Root cause, verified by splitting the answered rows by order size:**
+
+| hindsight bucket | share of answered rows | model CMR | naive CMR |
+|---|---|---|---|
+| 0–2 cases (small orders) | 68% | 51.4% | **63.1%** — naive wins by 12pp |
+| 3+ cases (larger orders) | 32% | **38.7%** — model wins by 7pp | 31.4% |
+
+Two-thirds of all SKU-days in the real candidate pool are small orders
+(1 case is the single most common `hindsight_demand_order` value, ~51% of
+all 39,192 rows). In that regime, `recommended_cases` ceilings *any*
+positive P50 up to at least 1 case (correct arithmetic — Problem Statement
+§4 specifies always-round-up, never down, since under-ordering is the
+costlier failure) — but a continuous GBR prediction almost never lands on
+exactly 0, while Naive_seasonal copies a real integer from last week that
+*can* be exactly 0. On days where actual demand truly is 0 (common for
+these lower-volume SKUs, especially after zero-filling Favorita's omitted
+days), Naive_seasonal gets it right essentially for free; the model
+structurally can't.
+
+**Why the pilot looked good and this doesn't:** the pilot's 30 SKUs were
+selected by density alone (data completeness), and just happened to skew
+toward the minority "larger order" regime where the model has a real edge
+(mean daily sales 26.6 vs the full pool's 18.3, and the single-SKU Phase 1
+demo item, 502331, averages ~86/day — nowhere near typical). Density says
+nothing about order-size regime; a small, non-representative pilot masked
+a real, majority-case weakness that only appeared once volume-diverse SKUs
+were included at scale.
+
+**Conclusion — not a coding bug, not project failure, a real scope gap in
+the SKU selection criteria:** density (§3.2's filter chain: perishable →
+integer-sold → density) never checked whether a SKU's typical order size
+is even large enough for case-level rounding to be a meaningful decision
+in the first place. For SKUs that almost always round to 0 or 1 case, the
+whole "quantile regression + case rounding" apparatus is arguably the
+wrong tool — a much simpler rule might do as well or better, which is
+itself worth stating plainly rather than hidden.
+
+**Open decision for the next step (not yet made — ask Harry):** (a) add an
+order-size filter to the SKU selection (e.g. require median actual units
+meaningfully above one case_pack) and re-run only on that higher-volume
+subset, closer to what the Problem Statement's "Tomato slices / Lettuce"
+persona examples implied; or (b) keep the full, unfiltered candidate pool
+and report the split honestly — "this approach helps on higher-volume
+SKUs, actively hurts on low-volume ones" — which is itself a defensible,
+mature finding for the final report, arguably more interesting than a
+single clean headline number.
