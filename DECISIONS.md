@@ -591,3 +591,55 @@ file. The new gate lives in a new module; the experiment in a new script.
 
 **No second try.** If store 49 fails the criterion, that is the result;
 the signal is not modified and re-run.
+
+---
+
+## 2026-09-24 — Case-straddle experiment results: passes the pre-registered test, but abstains far too often to use
+
+**What:** Ran `run_case_gate_experiment.py` once, as pre-registered
+(code commit `eaba9ff`, committed before the run). Store 49 backtest saved
+to `data/backtest_results_store49.parquet`; store 44 results file read
+only. No existing file or result changed.
+
+**Case-straddle gate:**
+
+| store | scope | abstain | model CMR | naive CMR | rel. impr. | abst. precision | random base | lift |
+|---|---|---|---|---|---|---|---|---|
+| 44 (dev) | pooled | 77.9% | 92.1% | 88.8% | +3.7% | 39.6% | 32.6% | **1.21x** |
+| 44 (dev) | folds | 77.3–78.5% | | | +3.4 to +4.0% | | | 1.20 / 1.22 / 1.23 |
+| **49 (confirm)** | pooled | 74.2% | 93.1% | 89.1% | +4.4% | 36.4% | 28.8% | **1.26x** |
+| **49 (confirm)** | folds | 73.7–74.9% | | | +4.2 to +4.8% | | | 1.26 / 1.27 / 1.27 |
+
+**Pre-registered verdict (store 49): SUCCESS** — pooled lift 1.26 > 1.0,
+and 3 of 3 folds > 1.0. Consistent across both stores and all six folds.
+
+**Replication of the original `rel_width` gate on store 49:** lift 1.01x
+at 0.60 (≈ random) and 0.89x at 1.00 (worse than random) — the original
+negative result replicates on unseen data. (Side note, reported for
+completeness, not as a headline: on store 49 the model's CMR improvement
+at `rel_width` 1.00 is +15.4% vs +11.9% on store 44, so whether the
+forecaster clears the ≥15% target is store-dependent.)
+
+**What "success" does and doesn't mean here:**
+- *Does:* measuring uncertainty in case counts rather than demand units is
+  a real signal. The abstained set is ~1.2–1.3x more likely to contain a
+  wrong order than a random set of the same size, on a store the idea was
+  never developed on.
+- *Doesn't:* make it usable. It abstains on ~74–78% of SKU-days. Using the
+  Problem Statement's own coupling formula, recall = abstain rate ×
+  precision ÷ base rate ≈ 0.742 × 0.364 ÷ 0.288 ≈ 94% on store 49: it
+  catches almost every error, but only by handing back three quarters of
+  all decisions. The Problem Statement's attention model put break-even
+  at ~29% abstain; this is far past it. The pre-registered criterion
+  (lift > 1) was deliberately a low bar for "is there a signal at all",
+  and it passed that bar — not the higher bar of "is it deployable".
+- *Why so many abstentions (the risk flagged before running):* median
+  daily sales in this SKU pool is ~12 units — about one case — so an 80%
+  interval very often spans a case boundary. The result also depends
+  entirely on the assumed `case_pack=12`, which Favorita doesn't contain.
+
+**Status:** no follow-up run. A version with a tunable knob (e.g. abstain
+only when P50 is within some distance of a boundary) could trade recall
+for a lower abstain rate, but that is a new experiment with a threshold to
+choose, would need its own pre-registration, and is noted as future work,
+not done.
