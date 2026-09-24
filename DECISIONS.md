@@ -814,3 +814,40 @@ pre-registered results:
 - model vs naive CMR on the answered subset for each of the above.
 
 No other exclusion is tried afterwards.
+
+---
+
+## 2026-09-24 — Sensitivity check results (active SKUs only) and harness batch 2 generated
+
+**Sensitivity check** (`run_sensitivity_active_skus.py`, code commit
+`e419d5e` before the run): 21 inactive SKUs excluded per store (1,932
+SKU-days each). Original pre-registered numbers remain primary.
+
+| | original | active SKUs only |
+|---|---|---|
+| **case-straddle lift**, store 44 (dev) | 1.21x | **1.19x** (folds 1.18 / 1.20 / 1.20) |
+| **case-straddle lift**, store 49 (confirm) | 1.26x | **1.24x** (folds 1.24 / 1.24 / 1.24) |
+| case-straddle abstain rate, 44 / 49 | 77.9% / 74.2% | 79.3% / 75.6% |
+| `rel_width` lift at 0.60, 44 / 49 | 1.01x / 1.01x | 0.98x / 0.99x |
+| `rel_width` lift at 1.00, 44 / 49 | 0.91x / 0.89x | 0.89x / 0.87x |
+| forecaster rel. improvement at `rel_width` 1.00, 44 / 49 | +11.9% / +15.4% | +14.6% / +20.0% |
+
+**Reading:**
+- The case-straddle result survives: lift drops slightly (the dead-SKU
+  rows were inflating it, as suspected) but stays above 1.0 in every fold
+  of both stores. Before the run I'd estimated ~1.20x for store 49 from
+  simple arithmetic; the real figure is 1.24x.
+- The `rel_width` gate looks *worse* without the dead SKUs — its
+  "≈ random" at 0.60 becomes slightly below random in both stores.
+- The forecaster's improvement over naive *grows* once trivial zero days
+  are removed, landing around the 15% target (14.6% store 44, 20.0% store
+  49 at threshold 1.00) — so "below target" from the primary results is
+  not robust either way; the honest statement is "around the target,
+  store-dependent". Per-fold figures at threshold 0.60 swing widely (e.g.
+  store 49: +28.1% / +9.2% / +0.0%) because only ~2–3% of SKU-days are
+  answered there — small samples, not a finding.
+
+**Harness batch 2** (7 real gpt-4o-mini calls): L1 on raw output 7/7 pass,
+all seven non-trivial (order 1–4 cases, real averages). Harry's labels
+pending — sentences deliberately not commented on here to keep his
+labelling blind.
