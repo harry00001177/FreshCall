@@ -540,3 +540,54 @@ orders will be wrong." That is a negative result on the project's core
 hypothesis, arrived at by a method (fair comparison, rolling folds,
 pre-registration, correcting our own misdiagnosis) that is itself the
 strongest thing to show.
+
+---
+
+## 2026-09-24 — PRE-REGISTRATION: a new gate signal ("case-straddle"), tested on a fresh store
+
+Committed before any code for this experiment exists and before any
+case-straddle number has been computed on any store.
+
+**Why a new signal, and why it isn't "more tuning":** the `rel_width` gate
+failed (entry above) and stays reported as failed. This is a *different
+hypothesis*, motivated by *why* it failed: `rel_width` measures
+uncertainty in units of demand, but the manager's decision is in cases.
+A wide interval whose P10/P50/P90 all round to the same case count is a
+safe decision; a narrow one sitting on a case boundary is not.
+
+**Hypothesis:** abstaining when the interval implies more than one case
+count gives abstention precision above random.
+
+**Signal, exactly:** abstain iff `recommended_cases(q, safety, on_hand,
+case_pack)` is not the same for all three of q = P10, P50, P90. Same
+`safety=0`, `on_hand=0`, `case_pack=12`. No threshold, so no sweep and no
+knob to tune after seeing results.
+
+**Data:**
+- *Development:* store 44, reusing the stored post-fix predictions in
+  `data/backtest_results.parquet` (read-only; no re-run, no overwrite).
+- *Confirmation:* store 49, chosen by a rule stated before looking at any
+  of its predictions — highest count of density ≥ 0.7 SKUs, excluding
+  store 44 (store 49: 541). Same SKU rule as store 44: perishable,
+  integer-sold, density ≥ 0.7, first sale on or before 2015-06-01 → 436
+  SKUs. Same model, hyperparameters, 3 folds. Run once. Output to its own
+  file (`data/backtest_results_store49.parquet`).
+- *Limitation, stated up front:* 410 of store 49's 436 items also appear in
+  store 44's list. Store 49 is unseen sales data, not unseen products — it
+  tests "does this hold in another store", not "for other products".
+
+**Reported for both stores, whatever it shows:** abstain rate; model CMR
+and naive CMR on the same answered subset, and relative improvement;
+abstention precision, error_base_rate, lift — pooled and per fold. For
+store 49 also the `rel_width` gate at 0.60 and 1.00, as a replication
+check of the original negative result.
+
+**Success criterion (judged on store 49 only):** pooled lift > 1.0 AND
+lift > 1.0 in at least 2 of the 3 folds. Store 44 numbers are development
+and do not count toward success or failure.
+
+**Not changed:** every existing module, script, config value and result
+file. The new gate lives in a new module; the experiment in a new script.
+
+**No second try.** If store 49 fails the criterion, that is the result;
+the signal is not modified and re-run.
