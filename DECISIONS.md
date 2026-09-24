@@ -250,3 +250,61 @@ didn't. Re-ran against the real API (not mocked): output changed from
 and a last same weekday sales of 161.0."` to `"ORDER 13 cases. Recent
 average 99.9, lower than last week's 161.0."` — matches the target style,
 still passes containment, all 40 tests still green.
+
+---
+
+## 2026-09-24 — Phase 2 pilot backtest (30 SKUs, 3 folds): two real findings, one good, one an open problem
+
+**What:** Ran the full `backtest.py` pipeline (fit once per SKU per fold on
+data up to that fold's train cutoff, walk forward through the 31-day test
+window) on a 30-SKU pilot from the 426 store-44 candidates with long enough
+history for all 3 folds. 2,760 real SKU-day predictions, saved to
+`data/backtest_results.parquet`.
+
+**Finding 1 — the Section 7 sweep range (0.40/0.50/0.60/0.70) was wrong,
+not the model:** Measured `rel_width` on real data has median 0.77, so even
+the "boldest" planned threshold (0.70) still abstains on 60.4% of SKU-days —
+nowhere near the 15% design target. Swept further out and found the
+threshold that actually produces ~15% abstain rate is **~1.00**, not 0.60.
+At that threshold: abstain rate 16.2%, Case Match Rate (on the auto-answered
+subset, computed fairly per the 2026-09-23 instructor fix) = 58.3% vs
+Naive_seasonal's 50.0% on the *same* subset — a **16.6% relative
+improvement**, clearing the Problem Statement's ≥15% target. Coverage at
+that threshold: 78.4% vs nominal 80%, reasonably close.
+
+**Finding 2 — abstention precision does NOT beat random selection, at any
+threshold tested. This trips the Problem Statement's own abandon
+condition:**
+
+| threshold | abstain rate | abstention precision | error_base_rate (random) | lift |
+|---|---|---|---|---|
+| 0.60 | 74.5% | 40.8% | 40.3% | 1.01x |
+| 0.70 | 60.4% | 39.4% | 40.3% | 0.98x |
+| 0.85 | 34.3% | 38.1% | 40.3% | 0.95x |
+| 1.00 | 16.2% | 32.6% | 40.3% | 0.81x |
+| 1.20 | 5.8% | 27.5% | 40.3% | 0.68x |
+
+At the ~15%-abstain operating point (threshold 1.00), the gate's chosen
+abstain set is *less* likely to contain a real case-rounding error than a
+same-sized random sample would be. This gets worse, not better, as the
+threshold rises (i.e. as the gate gets more "selective").
+
+**Working hypothesis, not yet confirmed:** `rel_width` measures how volatile
+a SKU-day's demand is (aleatoric uncertainty), which is not the same thing
+as how close its P50 sits to a case-pack rounding boundary. A high-volatility
+SKU-day can still land its P50 safely mid-bucket (right answer despite a
+wide interval); a low-volatility SKU-day can still sit right on a case
+boundary and round the wrong way (wrong answer despite a narrow interval).
+If true, `rel_width` alone is the wrong signal for *this specific* gate
+purpose, even though it's a perfectly fine signal for the calibration
+check (which it passes).
+
+**Not treating this as project failure — treating it as the honest result
+the Section 7 abandon condition exists to surface.** Two things left
+unresolved, to check before drawing a final conclusion: (1) is this a real
+pattern or a 30-SKU pilot artifact — scaling to the full 426-SKU candidate
+set is the immediate next step; (2) if it holds at scale, worth testing
+whether a boundary-distance signal (how close P50 sits to the nearest
+case-pack multiple) predicts case-rounding errors better than `rel_width`
+does — a genuinely different idea from "widen or narrow the same
+threshold," not yet implemented.
