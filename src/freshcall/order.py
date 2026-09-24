@@ -5,9 +5,17 @@ cash error, not a wording error."""
 import math
 
 
+def _round_half_up(x: float) -> int:
+    # Python's round() is banker's rounding (round(2.5) == 2); units need half-up
+    return math.floor(x + 0.5)
+
+
 def recommended_cases(demand: float, safety: float, on_hand: float, case_pack: int) -> int:
-    """Cases to order = ceil((demand + safety - on_hand) / case_pack), floored at 0."""
-    needed_units = demand + safety - on_hand
+    """Cases to order = ceil((round(demand) + safety - on_hand) / case_pack),
+    floored at 0. The forecast is rounded to whole units first because the
+    SKU pool is integer-sold only: a forecast of 0.4 units means 0 units,
+    and must not become a full case (DECISIONS.md 2026-09-24 pre-registration)."""
+    needed_units = _round_half_up(demand) + safety - on_hand
     if needed_units <= 0:
         return 0
     return math.ceil(needed_units / case_pack)
