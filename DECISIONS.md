@@ -774,3 +774,43 @@ the random base rate's denominator with non-errors that any gate answering
 zeros "gets right", which can inflate a gate's lift. Pre-registered
 results stand as reported; whether a sensitivity check excluding these
 SKUs should be added is an open decision for Harry.
+
+---
+
+## 2026-09-24 — Harry's batch 1 labels; PRE-REGISTRATION of batch 2 and a sensitivity check
+
+**Batch 1 L2 human labels (Harry, blind — no judge output exists yet):**
+faithful 10/10, usable 10/10. Qualitative note on all 7 LLM sentences: "a
+bit long; only restates the facts, no reason given." That is a real design
+tension, not a bug: the Problem Statement's target output ("…steady")
+includes a little interpretation, but every word of interpretation is a
+chance to say something the fact block doesn't support. Prompt not changed
+mid-evaluation; noted for the final report.
+
+**Gap found while labelling:** the 2026-09-22 decision to show a reference
+anchor (last same-weekday actual) next to "ASK ME" is not implemented. The
+number sits in the fact block but nothing surfaces it — it was meant for
+the UI, which was deferred. Open for Harry.
+
+**Pre-registered, before any code or number for either:**
+
+*Harness batch 2 (Harry approved; supplementary):* added *because* batch 1
+tested the LLM on 6 identical all-zero inputs — labelled as supplementary
+in any report, batch 1 reported unchanged. Same store-44 results, same
+`rel_width` strata, same seed 42, restricted to SKU-days with P50 ≥ 1
+(an input-side filter on the model's own forecast, not on actual sales),
+excluding batch 1's rows: 4 confident + 3 borderline, no abstain stratum
+(the abstain path doesn't call the LLM). Same fact block, same L1 on raw
+output, same two labels by Harry before any judge runs.
+
+*Sensitivity check (Harry approved):* recompute from the stored
+predictions — no refit — excluding SKUs whose last sale in that store
+was before 2017-05-16 (the first test window's start): 21 SKUs per store.
+Reported next to the original numbers, which stay the primary,
+pre-registered results:
+- case-straddle gate, both stores: pooled + per-fold abstain rate,
+  abstention precision, error_base_rate, lift;
+- `rel_width` gate at 0.60 and 1.00, both stores: same metrics;
+- model vs naive CMR on the answered subset for each of the above.
+
+No other exclusion is tried afterwards.
