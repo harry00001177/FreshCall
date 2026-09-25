@@ -8,6 +8,10 @@ safety: 0               # ASSUMPTION — kept 0 so recommended cases are compara
 on_hand: 0              # Not an assumption — Favorita has no inventory field, so this is a data limitation
 
 gate:
+  # The system's gate. case_straddle is the only gate that beat random on an
+  # unseen store (pre-registered, DECISIONS.md 2026-09-24); rel_width is the
+  # original design, kept for the experiments and the UI's comparison view.
+  type: case_straddle         # case_straddle | rel_width
   rel_width_threshold: 0.60   # opening position for the Section 7 sweep, not a derived value
   # Extended from the Problem Statement's 0.40-0.70: real rel_width has median ~0.77,
   # so that range never reached the ~15% abstain design point (DECISIONS.md 2026-09-24).
