@@ -49,6 +49,13 @@ class TestRenderTemplateFallback:
         assert "ASK ME" in text
         assert re.findall(r"\d+(?:\.\d+)?", text) == ["12"]
 
+    def test_abstain_anchor_of_one_is_singular(self):
+        fb = build_fact_block(
+            sku_name="Lettuce", abstain=True, recommend_cases=None,
+            recent_avg=15, last_same_weekday=1.0,
+        )
+        assert render_template_fallback(fb).endswith("Same day last week: 1 unit.")
+
     def test_abstain_template_without_an_anchor_has_no_digits(self):
         fb = build_fact_block(
             sku_name="Lettuce", abstain=True, recommend_cases=None,
