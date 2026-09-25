@@ -1658,3 +1658,37 @@ unit averages.) The Problem Statement's own target output already showed
 both: "ORDER 3 cases (36 units)."
 
 Next: decide how to fix both before the UI is rebuilt.
+
+---
+
+## 2026-09-25 — Decision: the order line becomes a deterministic template; PRE-REGISTRATION
+
+**Decision (Harry):** the manager-facing sentence is written by a fixed
+template, not the LLM. Why: for a fixed-format line, the measured record
+is that the LLM added no information and every risk we found — invented
+numbers (caught by containment), overstatement (fixed by restricting
+words), and now breaking the 10% "about the same" rule in 2/14 — while
+costing latency and money and needing a fallback. The one thing it did
+(natural phrasing) a template does as well here. The LLM keeps a real job
+where it earned one: the **judge** inside the evaluation. Old v1/v2 LLM
+paths stay in the code, unchanged, so every earlier result reproduces.
+This reverses part of the Problem Statement's architecture (§4: "rented
+gpt-4o-mini for language"), based on evidence — to be stated as such.
+
+**PRE-REGISTERED, before any code:**
+
+*Template (v3):* `ORDER {n} case(s) ({n×12} units). {Weekday}s have averaged
+{avg} units, {word} last {Weekday}'s {last}.` — `{word}` computed in Python:
+"about the same as" if |avg − last| ≤ 10% of the larger, else "higher than"
+/ "lower than"; both zero → "about the same as". Unit and case words
+singular/plural as needed.
+
+*Test:* regenerate the same 14 batch-3 SKU-days with the template. Checks:
+(1) L1 containment 14/14; (2) comparison word correct under the 10% rule
+14/14 (deterministic); (3) every number in the reason is followed by
+"units" / "unit", and the order states both cases and units; (4) Harry
+labels the 14 on the same 3 questions, blind; (5) the judge (Haiku, 3
+questions) runs after, and its disagreements are reported.
+
+*Success:* checks 1–3 all 14/14 AND Harry "yes" on all 3 questions for all
+14. If not, reported as is.
