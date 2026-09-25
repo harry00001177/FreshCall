@@ -1370,3 +1370,51 @@ ASK ME share on these rows: case-straddle 71.1%, `rel_width` 0.60 98.6%.
 file; Harry to capture one while recording the video). The UI needs the
 Kaggle-derived cache, so it can't run from a clean clone without the data
 — the synthetic `--demo` path covers only `run_slice.py`. No deployment.
+
+---
+
+## 2026-09-25 — Re-examining "real-world value": the gate, as designed, removes the value the model creates
+
+Harry asked the question that matters most: does this have real value for
+a manager? Measured it the way a manager experiences it — wrong orders and
+minutes per night — on store 44 (development data; not yet confirmed on
+another store). Descriptive, computed from stored predictions.
+
+**Assumptions, stated:** timings are the Problem Statement §5 guesses,
+never measured (today 30 s per SKU; a system answer 5 s to scan; a
+handed-back SKU 90 s). A handed-back SKU is assumed to be ordered the way
+managers do today — "same weekday last week" (the naive baseline) — the
+only proxy for human judgement this data allows.
+
+| policy (per 40-SKU night) | handed back | wrong orders | over (waste) | under (stockout) | minutes |
+|---|---|---|---|---|---|
+| today: manager orders last week's number | 100% | 15.5 | 7.9 | 7.6 | 20.0 |
+| **system answers everything, no gate** | 0% | **13.1** | 7.0 | 6.1 | **3.3** |
+| `rel_width` 0.60 gate | 94% | 15.4 | 7.9 | 7.5 | 56.6 |
+| `rel_width` 1.00 gate | 73% | 14.8 | 7.7 | 7.1 | 44.9 |
+| case-straddle gate | 78% | 15.2 | 7.9 | 7.3 | 47.5 |
+
+**Why the gates lose:** even on the SKU-days case-straddle hands back (the
+hard ones), the model is wrong less often than "last week" (39.6% vs
+46.5%; on the answered ones 7.9% vs 11.2%). Handing a SKU to someone who
+does worse than the model there adds errors and time.
+
+**Reading:**
+- Under this proxy the *forecaster alone* has real value: ~15% fewer wrong
+  orders than today (13.1 vs 15.5 per night), fewer over-orders (7.0 vs
+  7.9) and fewer stockouts (6.1 vs 7.6) — and far less time.
+- Every gate we built gives most of that away: errors back near today's
+  level, and more minutes than today.
+- The evaluation so far asked "is the gate more likely to abstain where
+  the *model* is wrong?" (abstention precision vs random). The question
+  that decides real value is different: "is the *manager* likely to do
+  better than the model on the SKUs handed back?" A person guessing with
+  no extra information is not. A person who knows something the model
+  can't see — a local event, a promotion, a delivery problem — might be.
+  This data has no record of what managers know, so that part cannot be
+  measured here; it is the central open question for any real deployment.
+- Caveats: store 44 only; the manager proxy is pessimistic (a real manager
+  thinking for 90 s may beat "last week"); minutes rest on unmeasured
+  timings (the error comparison does not).
+
+Redesign direction to be decided with Harry before any new code.
