@@ -22,10 +22,16 @@ from freshcall.order import hindsight_demand_order, recommended_cases
 FEATURE_COLS_STATIC = ["lag_1", "lag_7", "rolling_7_mean"]
 
 
+DATA_PATH = "data/derived_perishable_train.parquet"
+DEMO_PATH = "demo/demo_sales.csv"
+
+
 @lru_cache(maxsize=1)
 def _load_raw_sales(parquet_path: str) -> pd.DataFrame:
     """Cached so Phase 2 (looping over 500+ SKUs) reads the 31M-row parquet
     from disk once, not once per SKU (measured at 1.26s/read)."""
+    if parquet_path.endswith(".csv"):
+        return pd.read_csv(parquet_path, parse_dates=["date"])
     return pd.read_parquet(parquet_path)
 
 
@@ -38,16 +44,14 @@ def load_sku_slice(parquet_path: str, store_nbr: int, item_nbr: int, n_rows: int
     return build_daily_grid(sku, start=start, end=end)
 
 
-def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83) -> dict:
+def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83,
+        data_path: str = DATA_PATH, store_nbr: int | None = None, item_nbr: int | None = None) -> dict:
     t0 = time.time()
     cfg = yaml.safe_load(open(config_path))
+    store_nbr = cfg["slice"]["store_nbr"] if store_nbr is None else store_nbr
+    item_nbr = cfg["slice"]["first_test_item_nbr"] if item_nbr is None else item_nbr
 
-    grid = load_sku_slice(
-        "data/derived_perishable_train.parquet",
-        cfg["slice"]["store_nbr"],
-        cfg["slice"]["first_test_item_nbr"],
-        n_rows=n_rows,
-    )
+    grid = load_sku_slice(data_path, store_nbr, item_nbr, n_rows=n_rows)
     feats = add_features(grid)
     dow_cols = [c for c in feats.columns if c.startswith("dow_")]
     feature_cols = dow_cols + FEATURE_COLS_STATIC
@@ -79,7 +83,7 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     hindsight = hindsight_demand_order(actual, case_pack)
 
     fact_block = build_fact_block(
-        sku_name=f"item {cfg['slice']['first_test_item_nbr']}",
+        sku_name=f"item {item_nbr}",
         abstain=abstain,
         recommend_cases=cases,
         recent_avg=recent_avg,
@@ -136,6 +140,12 @@ def check_pass_fail(result: dict) -> None:
 
 
 if __name__ == "__main__":
-    result = run()
+    import sys
+
+    if "--demo" in sys.argv:
+        # synthetic series from make_demo_data.py: runs without the Kaggle data
+        result = run(data_path=DEMO_PATH, store_nbr=0, item_nbr=0)
+    else:
+        result = run()
     print_report(result)
     check_pass_fail(result)
