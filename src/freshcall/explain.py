@@ -143,3 +143,40 @@ def generate_explanation(fact_block: dict, call_llm=None) -> str:
         return render_template_fallback(fact_block)
 
     return text
+
+
+# --- v3 (DECISIONS.md 2026-09-25): the manager-facing sentence is a fixed
+# template. Every number and the comparison word are computed here, so the
+# sentence cannot invent a figure, overstate, or misapply the 10% rule; the
+# LLM's job moves to the judge in the evaluation.
+
+
+def comparison_word(avg: float, last: float, tolerance: float = 0.10) -> str:
+    biggest = max(abs(avg), abs(last))
+    if biggest == 0 or abs(avg - last) <= tolerance * biggest:
+        return "about the same as"
+    return "higher than" if avg > last else "lower than"
+
+
+def _count(n: float, word: str) -> str:
+    return f"{n:g} {word}{'' if n == 1 else 's'}"
+
+
+def order_sentence(cases: int, case_pack: int, weekday: str, weekday_avg: float, last_same_weekday: float) -> str:
+    units = cases * case_pack
+    return (f"ORDER {_count(cases, 'case')} ({_count(units, 'unit')}). "
+            f"{weekday}s have averaged {_count(weekday_avg, 'unit')}, "
+            f"{comparison_word(weekday_avg, last_same_weekday)} last {weekday}'s {last_same_weekday:g}.")
+
+
+def build_fact_block_v3(sku_name, recommend_cases, case_pack, weekday, weekday_avg, last_same_weekday) -> dict:
+    return {
+        "sku_name": sku_name, "abstain": False, "recommend_cases": recommend_cases,
+        "recommend_units": recommend_cases * case_pack, "case_pack": case_pack,
+        "weekday": weekday, "weekday_avg": weekday_avg, "last_same_weekday": last_same_weekday,
+    }
+
+
+def order_sentence_from(fact_block: dict) -> str:
+    return order_sentence(fact_block["recommend_cases"], fact_block["case_pack"], fact_block["weekday"],
+                          fact_block["weekday_avg"], fact_block["last_same_weekday"])
