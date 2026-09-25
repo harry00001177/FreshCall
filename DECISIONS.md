@@ -1490,3 +1490,54 @@ at least 2 of 3 folds. Store 44 numbers are development only.
 
 *No second try:* store 8 is not re-run with any definition, rounding or
 threshold changed. Whatever it shows is reported.
+
+---
+
+## 2026-09-25 — Redesign results: confirmed on store 8 (pre-registered SUCCESS)
+
+`experiments/run_redesign.py` (commit `0c9176d`, before any store-8 result
+existed; store-8 backtest saved without printing metrics, then evaluated
+once). Per 40-SKU night; redesign = manager accepts every suggestion (a
+floor); timings are assumptions.
+
+**Non-routine SKU-days (the headline):**
+
+| | store 44 today | store 44 redesign | **store 8 today** | **store 8 redesign** |
+|---|---|---|---|---|
+| wrong orders | 17.8 | 15.0 | 13.3 | **10.3** (−23%) |
+| units over (waste) | 317.9 | 285.2 | 282.3 | **250.1** (−11%) |
+| units short (stockout) | 83.4 | 59.5 | 41.7 | **31.0** (−26%) |
+| minutes (assumed) | 20.0 | 3.3 | 20.0 | 3.3 |
+
+Store 8, non-routine, per fold — beats today on both case errors and total
+unit error in **3 of 3 folds** (wrong 13.2→10.9, 13.7→10.3, 12.9→9.7;
+|unit error| 326→282, 327→275, 319→286). **Pre-registered criterion met.**
+
+**Range:** the needed cases fall inside the shown range 94.1% (store 44) /
+94.8% (store 8). Width 0 / 1 / 2+ cases: 15/44/41% (44), 28/49/23% (8).
+The widest-range quarter holds 42.1% / 45.2% of the redesign's case errors
+(vs 25% if width meant nothing) — "widest first" does point the manager at
+the lines most likely to be wrong, about 1.7–1.8× more than chance.
+
+**Routine SKU-days** (17.3% of store 44, 38.7% of store 8): fewer wrong
+orders (store 8 6.1 → 4.4) and far fewer units short (9.4 → 1.3), **but
+more units wasted** (243.5 → 281.0; store 44 182.8 → 214.1). The model
+orders a case where "last week" would have ordered none, trading
+stockouts for waste on low-volume SKUs. Reported, not hidden: on routine
+SKUs the redesign is not better on waste.
+
+**Overall (all SKUs), store 8:** wrong 10.5 → 8.0, units over 267.3 →
+262.1, units short 29.2 → 19.5, minutes 20 → 2.3.
+
+**Caveats:** absolute waste is inflated for *both* policies by the
+no-inventory assumption (every day's order starts from zero stock, so a
+case bought for 3 units wastes 9 every day) — compare the two policies,
+don't read the absolute units as a real store's waste. Manager judgement
+is not measured (floor only). Timings unmeasured. Stores 44 and 8 are both
+in Quito.
+
+**What this means:** the value the project set out to deliver — fewer bad
+orders for less of the manager's time — holds up on an unseen store once
+the product stops handing uncertain SKUs back and instead shows every
+order with its likely range. The original abstention idea failed; the
+redesign built from understanding *why* it failed passes.
