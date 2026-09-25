@@ -8,7 +8,18 @@ import math
 
 import pandas as pd
 
-from freshcall.order import recommended_cases
+from freshcall.order import naive_seasonal_order, recommended_cases
+
+
+def standing_order(policy: str, model_cases: int, last_week_units: float, case_pack: int) -> int:
+    """Order for a routine SKU under the store's `routine_policy`: `model`
+    (fewer stockouts, more waste) or `last_week` (the reverse) — a trade-off
+    only the store can price (DECISIONS.md 2026-09-25)."""
+    if policy == "model":
+        return model_cases
+    if policy == "last_week":
+        return naive_seasonal_order(last_week_units, case_pack)
+    raise ValueError(f"unknown routine_policy: {policy!r}")
 
 
 def past_max(daily_sales: pd.Series, window: int = 28) -> pd.Series:

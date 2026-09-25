@@ -20,6 +20,10 @@ class TestDecideAbstain:
         assert decide_abstain(50, 86, 140, _cfg("rel_width")) is True
         assert decide_abstain(35.6, 36.4, 37.0, _cfg("rel_width")) is False
 
+    def test_none_never_abstains(self):
+        # the redesign: every SKU gets an order; uncertainty is shown as a range
+        assert decide_abstain(1, 50, 200, _cfg("none")) is False
+
     def test_unknown_gate_type_is_an_error_not_a_silent_default(self):
         import pytest
         with pytest.raises(ValueError):
