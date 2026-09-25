@@ -1214,3 +1214,37 @@ reported number.
 90-day series (`demo/demo_sales.csv`, store 0 / item 0, fixed seed);
 `run_slice.py --demo` runs end to end without the Kaggle data. Never used
 for any reported result.
+
+---
+
+## 2026-09-25 — Leak test result: one missing shift(1) would have faked a "target met"
+
+`run_leak_test.py` (code commit `29cd392` before the run): store 44, 426
+SKUs × 3 folds, refit with `rolling_7_mean` including the day being
+predicted. Output `data/backtest_results_leaky.parquet`.
+
+| gate | run | abstain | model CMR | naive CMR | rel. improvement | coverage | lift |
+|---|---|---|---|---|---|---|---|
+| `rel_width` 0.60 | clean | 94.0% | 72.1% | 69.1% | +4.4% | 77.6% | 1.01x |
+| | **leaky** | 91.6% | 70.9% | 63.8% | **+11.2%** | 78.3% | 1.00x |
+| `rel_width` 1.00 | clean | 73.3% | 59.3% | 53.0% | +11.8% | 77.6% | 0.91x |
+| | **leaky** | 65.9% | 65.7% | 54.4% | **+20.7%** | 78.3% | 0.91x |
+| case-straddle | clean | 77.9% | 92.1% | 88.8% | +3.7% | 77.6% | 1.21x |
+| | **leaky** | 73.7% | 93.5% | 88.2% | +6.0% | 78.3% | **1.28x** |
+
+(Clean relative improvements are computed here from unrounded CMRs, so
++4.4% / +11.8% vs the +4.3% / +11.9% logged earlier from rounded ones.)
+
+**Reading:**
+- The leak inflates every headline in the direction I'd have wanted: the
+  forecaster's improvement at threshold 1.00 nearly doubles, from +11.8%
+  to +20.7% — **crossing the Problem Statement's ≥15% target** — the model
+  looks more confident (abstain rate 73% → 66%), and the case-straddle
+  gate's lift rises from 1.21x to 1.28x. A single forgotten `.shift(1)`
+  would have turned "around the target" into a clean, false success.
+- Coverage barely moves (77.6% → 78.3%): the calibration check would *not*
+  have exposed this leak. What does: the existing unit test
+  `test_rolling_7_mean_excludes_todays_value` fails against the leaky
+  feature — confirmed programmatically in the same run.
+- This is the "before-and-after" the Watch-outs ask for; the clean
+  numbers remain the reported results.

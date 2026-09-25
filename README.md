@@ -43,6 +43,19 @@ stand-in for QSR data). Headline results, all detailed in `DECISIONS.md`:
   than the (correct) recommendation — the "true but misleading" risk the
   Problem Statement predicted, which no check here catches.
 
+- **Leakage check:** injecting one realistic bug (a 7-day mean that
+  includes the day being predicted) inflates the forecaster's improvement
+  from +11.8% to +20.7% — a fake pass of the 15% target — while interval
+  coverage barely moves; the existing unit test catches it. Hunting for
+  leakage also found SKU selection had used test-period sales for 5 of 426
+  SKUs; dropping them changes nothing material.
+- **Monitors:** bias and coverage monitors (bands fitted on the first
+  fold) stay quiet on the real test windows apart from one day; on a
+  simulated +50% demand shift the bias monitor alerts the next day.
+  Built guardrails: numeral containment with template fallback, the
+  abstain gate, the two monitors. Not built: holiday rule, novelty check,
+  per-order confirmation UI.
+
 Evaluation tables for the explanation layer are in
 [`results/explanation_harness/`](./results/explanation_harness/) (10–17
 rows each, with a few derived numbers from the Kaggle data per row).
@@ -55,7 +68,8 @@ ordering (Layer B). `case_pack=12` is an assumption; see `config.yaml`.
 
 ```text
 src/freshcall/      order, gate, case_gate, features, model, explain,
-                    containment, backtest, decomposition, harness, judge
+                    containment, backtest, decomposition, harness, judge,
+                    monitors
 tests/              pytest suite for every module above
 prepare_data.py     raw Kaggle CSVs -> derived files the pipeline reads
 run_slice.py        one SKU, end to end (Problem Statement Section 8)
@@ -68,11 +82,27 @@ run_explanation_harness.py     L1 check + sheet for human labels
 run_judge.py                   L2 judge vs human labels
 run_judge_negative_control.py  does the judge catch flawed sentences?
 run_comparison_word_check.py   generator prompt change, before vs after
+run_leak_test.py               deliberate leak: before-and-after
+run_sensitivity_lookahead.py   results without look-ahead-selected SKUs
+run_monitors.py                bias / coverage monitors + positive control
+make_demo_data.py              synthetic demo series (demo/)
 config.yaml         all assumptions (case_pack, safety, gate threshold...)
 results/            evaluation tables committed for review
 docs/               problem statement (v2 as submitted, v3 current),
                     project overview, original handoff
 ```
+
+## Quick demo (no Kaggle data needed)
+
+```bash
+pip install -r requirements.txt
+python make_demo_data.py
+PYTHONPATH=src python run_slice.py --demo
+```
+
+Runs the full predict → gate → order → explain path on a small synthetic
+series (`demo/demo_sales.csv`). Demo data is never used for any reported
+result.
 
 ## Setup
 
@@ -118,6 +148,8 @@ PYTHONPATH=src python run_error_decomposition.py
 PYTHONPATH=src:. python run_sensitivity_active_skus.py
 PYTHONPATH=src python run_explanation_harness.py 1   # then label, then:
 PYTHONPATH=src python run_judge.py
+PYTHONPATH=src:. python run_leak_test.py
+PYTHONPATH=src python run_monitors.py
 ```
 
 The full backtest takes about 6 minutes per store.
