@@ -1165,3 +1165,52 @@ lift at 0.60 / 1.00, and forecaster relative improvement.
   which is exactly why the positive control exists.
 
 No thresholds, windows or scaling factors are changed after seeing results.
+
+---
+
+## 2026-09-25 — Monitor and look-ahead results; demo data added
+
+**Monitors** (`run_monitors.py`, code commit `4d6564d` before the run; no
+refit, stored predictions). Bands fitted on fold 1, applied to folds 2–3:
+
+| | store 44 | store 49 |
+|---|---|---|
+| bias band (mean signed case error / SKU-day, 7-day rolling) | [−0.113, +0.133] | [−0.167, +0.096] |
+| folds 2–3 rolling range | [−0.096, +0.140] | [−0.120, +0.043] |
+| bias alerts, folds 2–3 | **1 day: 2017-08-13** | none |
+| coverage lower bound / folds 2–3 min | 0.733 / 0.738 | 0.710 / 0.749 |
+| coverage alerts, folds 2–3 | none | none |
+
+**Positive control** (store 44, actual sales ×1.5 from 2017-08-01, same
+fold-1 bands): bias monitor fired on **2017-08-02, one day after the
+shock**, with 0 alerts before it; coverage monitor also alerted on all 14
+days after it. The monitors do fire when demand really shifts.
+
+Reading: on the real data, the monitors stayed quiet except one store-44
+day (2017-08-13, rolling bias +0.140 vs upper bound +0.133 — the model
+over-ordering slightly). That 7-day window contains the 2017-08-11
+national holiday, which is a plausible cause, but with a single day and a
+single holiday this is not established. The quiet result is consistent
+with there being no known regime break in the test windows, which is why
+the positive control matters. Limits: store-level averages only (a bias
+in a handful of SKUs could hide inside a store average); the ±3 std band
+comes from one 31-day calibration fold.
+
+**Look-ahead sensitivity** (`run_sensitivity_lookahead.py`, same commit):
+5 look-ahead SKUs per store dropped (460 SKU-days each; item 1726956 is on
+both lists).
+
+| | original | without look-ahead SKUs |
+|---|---|---|
+| case-straddle lift, 44 / 49 | 1.21x / 1.26x | 1.22x / 1.27x |
+| `rel_width` lift at 0.60, 44 / 49 | 1.01x / 1.01x | 1.01x / 1.01x |
+| `rel_width` lift at 1.00, 44 / 49 | 0.91x / 0.89x | 0.91x / 0.89x |
+| forecaster rel. improvement at 1.00, 44 / 49 | +11.9% / +15.4% | +11.9% / +15.6% |
+
+The selection look-ahead is real but has no material effect on any
+reported number.
+
+**Demo data** (commit `ecf14c1`): `make_demo_data.py` writes a synthetic
+90-day series (`demo/demo_sales.csv`, store 0 / item 0, fixed seed);
+`run_slice.py --demo` runs end to end without the Kaggle data. Never used
+for any reported result.
