@@ -1418,3 +1418,75 @@ does worse than the model there adds errors and time.
   timings (the error comparison does not).
 
 Redesign direction to be decided with Harry before any new code.
+
+---
+
+## 2026-09-25 — Redesign decisions, and PRE-REGISTRATION of the redesign test
+
+**Decisions (Harry, grilled 2026-09-25):**
+- **Q1 — the hand-back's job:** hand a SKU to the manager only where the
+  *manager* can beat the model (information the model can't see), not
+  merely where the model is uncertain — the real-value check showed a
+  person without extra information does worse than the model even on the
+  hard SKUs.
+- **Q2 — product shape: "an order for every SKU, plus its likely range".**
+  No more ASK ME. The manager changes a line when they know something.
+  Manager-flagged events (promotions, local events) noted as the future
+  direction; this data has no record of what managers know.
+- **Q3 — headline measure:** wrong orders and minutes per 40-SKU night,
+  compared with today's practice. Abstention precision becomes a diagnostic.
+- **Q4 — validation:** develop on store 44; confirm once on a store never
+  looked at.
+- **Harry's point on trivial SKUs** (they always need 1 case; no model
+  needed): checked on store 44 — 17.3% of SKU-days are *routine* (every day
+  of the past 28 sold ≤ 1 case); today's practice is wrong on 11.4% of
+  them, the model on 9.7%; **95% of the errors the model avoids come from
+  the other 83%**, where today's practice is wrong 44.4% of the time vs the
+  model's 37.4%. Also: a case can be "right" and still waste units (5.4
+  units per routine order) — the case metric can't see that.
+- **Q5 — routine SKUs:** shown as collapsed *standing orders* at the
+  model's number (almost always 1 case; 0 for a SKU that has stopped
+  selling — a small change from "always 1 case", to avoid ordering for
+  nothing). Real stores would order these less often than daily, carrying
+  stock; this data has no inventory, so daily ordering is assumed.
+- **Q6 — metrics:** headline on non-routine SKU-days, routine reported
+  separately; add units over-ordered (waste) and units short (stockout),
+  not just case errors.
+- **Q7 — range display:** every non-routine SKU shows "ORDER n cases ·
+  likely lo–hi" (cases implied by P10 and P90), listed widest range first.
+  A range is information, not an alarm.
+
+**PRE-REGISTERED — committed before any redesign code exists and before
+store 8 has been backtested:**
+
+*Definitions (all known at order time):*
+- routine: the SKU's maximum daily sales over the 28 days before the order
+  date ≤ `case_pack` (12). Everything else is non-routine.
+- order = `recommended_cases(P50)` (current rounding); range =
+  [`recommended_cases(P10)`, `recommended_cases(P90)`].
+- units over = max(0, order × 12 − actual); units short =
+  max(0, actual − order × 12).
+
+*Compared, per 40-SKU night, routine and non-routine separately and
+together:* **today** (order = last week's same day, "naive") vs **redesign
+with the manager accepting every suggestion** — a floor for the redesign,
+since any real manager input is unmeasurable here. Reported: case errors,
+units over, units short, and minutes under stated assumptions (today 30 s
+per SKU; redesign 5 s per non-routine SKU, 1 s per routine SKU — never
+measured). For the range: share of non-routine SKU-days whose needed cases
+fall inside it; share with width 0 / 1 / 2+ cases; and the share of case
+errors that sit in the widest-range quarter (does "widest first" point
+the manager at the right lines?).
+
+*Data:* development = store 44 (existing post-fix backtest). Confirmation
+= **store 8** (Quito, type D), chosen by rule before any of its results
+exist: the store with most density ≥ 0.7 SKUs, excluding 44 and 49 (539);
+same SKU rule → 433 SKUs; same model, hyperparameters and 3 folds; run
+once, its own output file.
+
+*Success (store 8, non-routine SKU-days):* the redesign beats today on
+**case errors** AND on **total unit error (over + short)**, pooled AND in
+at least 2 of 3 folds. Store 44 numbers are development only.
+
+*No second try:* store 8 is not re-run with any definition, rounding or
+threshold changed. Whatever it shows is reported.
