@@ -42,7 +42,6 @@ stand-in for QSR data). Headline results, all detailed in `DECISIONS.md`:
   One real sentence was true in every word yet argued for ordering *more*
   than the (correct) recommendation — the "true but misleading" risk the
   Problem Statement predicted, which no check here catches.
-
 - **Leakage check:** injecting one realistic bug (a 7-day mean that
   includes the day being predicted) inflates the forecaster's improvement
   from +11.8% to +20.7% — a fake pass of the 15% target — while interval
@@ -57,7 +56,7 @@ stand-in for QSR data). Headline results, all detailed in `DECISIONS.md`:
   per-order confirmation UI.
 
 Evaluation tables for the explanation layer are in
-[`results/explanation_harness/`](./results/explanation_harness/) (10–17
+[`results/explanation_harness/`](./results/explanation_harness/) (7–17
 rows each, with a few derived numbers from the Kaggle data per row).
 
 Scope limit: the dataset has no inventory field, so this validates demand
