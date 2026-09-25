@@ -4,6 +4,9 @@ an invented number — falls back to a deterministic template. No network
 calls in these tests; the LLM call is injected so behaviour is testable
 without an API key."""
 
+import re
+
+from freshcall.containment import check_numeral_containment
 from freshcall.explain import build_fact_block, generate_explanation, render_template_fallback
 
 
@@ -35,14 +38,23 @@ class TestRenderTemplateFallback:
         assert "3" in text
         assert "ORDER" in text
 
-    def test_abstain_template_has_no_digits(self):
+    def test_abstain_template_shows_only_the_reference_anchor(self):
+        # the one number allowed on abstain: last same-weekday actual sales,
+        # a historical fact -- no recommended quantity, no confidence figure
         fb = build_fact_block(
             sku_name="Lettuce", abstain=True, recommend_cases=None,
             recent_avg=15, last_same_weekday=12,
         )
         text = render_template_fallback(fb)
-        assert not any(c.isdigit() for c in text)
         assert "ASK ME" in text
+        assert re.findall(r"\d+(?:\.\d+)?", text) == ["12"]
+
+    def test_abstain_template_without_an_anchor_has_no_digits(self):
+        fb = build_fact_block(
+            sku_name="Lettuce", abstain=True, recommend_cases=None,
+            recent_avg=15, last_same_weekday=None,
+        )
+        assert not any(c.isdigit() for c in render_template_fallback(fb))
 
 
 class TestGenerateExplanation:
@@ -92,4 +104,4 @@ class TestGenerateExplanation:
         text = generate_explanation(fb, call_llm=tracking_llm)
         assert calls == []  # the LLM was never invoked
         assert "ASK ME" in text
-        assert not any(c.isdigit() for c in text)
+        assert check_numeral_containment(text, fb)

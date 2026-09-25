@@ -25,7 +25,11 @@ def render_template_fallback(fact_block: dict) -> str:
     SKU-day, and as the fallback for any order SKU-day whose LLM output
     fails containment or the API call itself fails."""
     if fact_block["abstain"]:
-        return "ASK ME - this one is harder to call than usual. Please set it manually."
+        text = "ASK ME - this one is harder to call than usual. Please set it manually."
+        anchor = fact_block.get("last_same_weekday")
+        # reference anchor (DECISIONS.md 2026-09-22): a historical fact, not a
+        # recommendation or a confidence figure, so it's the one number allowed here
+        return text if anchor is None else f"{text} Same day last week: {anchor:g} units."
     return (
         f"ORDER {fact_block['recommend_cases']} cases. "
         f"Recent average {fact_block['recent_avg']}, "

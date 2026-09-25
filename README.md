@@ -18,18 +18,34 @@ The full pipeline runs end to end and has been backtested on 2 stores ×
 stand-in for QSR data). Headline results, all detailed in `DECISIONS.md`:
 
 - **Forecasting layer:** beats a "same day last week" baseline on the same
-  answered SKU-days at every threshold and fold, by +4% to +12% relative
-  on store 44 — below the Problem Statement's 15% target.
+  answered SKU-days at every threshold and fold. Relative improvement is
+  +4% to +12% on store 44 in the primary run; excluding 21 SKUs that had
+  stopped selling before the test period, +14.6% (store 44) and +20.0%
+  (store 49) at threshold 1.00 — around the 15% target, store-dependent.
 - **Original abstain gate (interval width, `rel_width`): failed.**
   Abstention precision is at or below random; replicated on a second,
-  unseen store.
+  unseen store and with the discontinued SKUs removed.
 - **Pre-registered replacement (abstain when P10/P50/P90 imply different
   case counts): a real signal** — 1.26x better than random on the unseen
-  confirmation store, all folds — **but not usable as-is**: it abstains on
-  ~74–78% of SKU-days, far past the manager-attention break-even.
+  confirmation store, all folds (1.24x without discontinued SKUs) — **but
+  not usable as-is**: it abstains on ~74–78% of SKU-days, far past the
+  manager-attention break-even.
 - **Error decomposition:** ~94% of would-be errors are detectable from the
   interval; the limit is the attention cost of acting on that, not
   detection.
+- **Explanation layer:** numeral containment passed 14/14 raw LLM
+  sentences; Harry and an independent judge model (Claude Haiku 4.5)
+  agreed on all 17 labelled sentences. A negative-control test showed the
+  judge catches 5 of 6 deliberately flawed sentences but misses overstated
+  comparisons ("significantly" on a tiny gap) — fixed at the source by
+  restricting the generator's comparison words (intensity words 4/7 → 0/7).
+  One real sentence was true in every word yet argued for ordering *more*
+  than the (correct) recommendation — the "true but misleading" risk the
+  Problem Statement predicted, which no check here catches.
+
+Evaluation tables for the explanation layer are in
+[`results/explanation_harness/`](./results/explanation_harness/) (10–17
+rows each, with a few derived numbers from the Kaggle data per row).
 
 Scope limit: the dataset has no inventory field, so this validates demand
 estimation, uncertainty and abstention (Layer A), not inventory-aware
@@ -39,16 +55,23 @@ ordering (Layer B). `case_pack=12` is an assumption; see `config.yaml`.
 
 ```text
 src/freshcall/      order, gate, case_gate, features, model, explain,
-                    containment, backtest, decomposition
+                    containment, backtest, decomposition, harness, judge
 tests/              pytest suite for every module above
 prepare_data.py     raw Kaggle CSVs -> derived files the pipeline reads
 run_slice.py        one SKU, end to end (Problem Statement Section 8)
 run_backtest.py     multi-SKU, 3-fold rolling-origin backtest
 report_backtest.py  pre-registered tables from a saved backtest
-run_case_gate_experiment.py  pre-registered case-straddle experiment
-run_error_decomposition.py   catchable vs uncaught error breakdown
+run_case_gate_experiment.py    pre-registered case-straddle experiment
+run_error_decomposition.py     catchable vs uncaught error breakdown
+run_sensitivity_active_skus.py same results without discontinued SKUs
+run_explanation_harness.py     L1 check + sheet for human labels
+run_judge.py                   L2 judge vs human labels
+run_judge_negative_control.py  does the judge catch flawed sentences?
+run_comparison_word_check.py   generator prompt change, before vs after
 config.yaml         all assumptions (case_pack, safety, gate threshold...)
-docs/               problem statement, project overview, original handoff
+results/            evaluation tables committed for review
+docs/               problem statement (v2 as submitted, v3 current),
+                    project overview, original handoff
 ```
 
 ## Setup
@@ -92,6 +115,9 @@ PYTHONPATH=src python run_backtest.py data/full_426_skus.parquet
 PYTHONPATH=src python report_backtest.py data/backtest_results.parquet
 PYTHONPATH=src:. python run_case_gate_experiment.py
 PYTHONPATH=src python run_error_decomposition.py
+PYTHONPATH=src:. python run_sensitivity_active_skus.py
+PYTHONPATH=src python run_explanation_harness.py 1   # then label, then:
+PYTHONPATH=src python run_judge.py
 ```
 
 The full backtest takes about 6 minutes per store.

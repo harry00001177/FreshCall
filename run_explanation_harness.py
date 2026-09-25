@@ -60,7 +60,7 @@ def main(batch: int = 1):
 
         if abstain:
             raw, shown = None, render_template_fallback(fb)
-            l1 = not any(ch.isdigit() for ch in shown)
+            l1 = check_numeral_containment(shown, fb)
             source = "template (abstain)"
         else:
             try:
@@ -85,7 +85,7 @@ def main(batch: int = 1):
     abstain_rows = [r for r in records if r["stratum"] == "abstain"]
     print(f"L1 on raw LLM output: {sum(r['l1_pass'] for r in llm_rows)}/{len(llm_rows)} pass")
     if abstain_rows:
-        print(f"Abstain texts with no digits: {sum(r['l1_pass'] for r in abstain_rows)}/{len(abstain_rows)}")
+        print(f"Abstain texts passing containment: {sum(r['l1_pass'] for r in abstain_rows)}/{len(abstain_rows)}")
     print()
     for r in records:
         print(f"[{r['case']}] {r['stratum']:<10} rel_width={r['rel_width']:<6} {r['fact_block']}")

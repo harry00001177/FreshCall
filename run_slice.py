@@ -126,8 +126,10 @@ def check_pass_fail(result: dict) -> None:
     )
 
     if result["abstain"]:
-        assert not any(c.isdigit() for c in result["text"]), (
-            "FAIL: an abstain message must contain no digits"
+        # the only number allowed is the reference anchor, already covered by
+        # the containment check above; no recommended quantity may appear
+        assert result["text"].startswith("ASK ME") and result["cases"] is None, (
+            "FAIL: an abstain message must hand back without a recommended quantity"
         )
 
     print("\nAll Section 8 pass/fail checks: PASSED")

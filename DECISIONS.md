@@ -1082,3 +1082,27 @@ the *method actually used* changed were updated, each with its reason:
 Validated against v2 (structure unchanged); a word-level diff confirms
 nothing else changed. Template header ("Milestone 1 / formative") left
 as is.
+
+---
+
+## 2026-09-25 — Wrap-up: reference anchor added, harness tables committed, docs refreshed
+
+- **Reference anchor on abstain (the 2026-09-22 decision, previously
+  unimplemented):** the abstain message now ends with "Same day last week:
+  N units." The abstain contract changes from "no digits at all" to "only
+  the anchor, which must be in the fact block" — enforced by the same
+  numeral-containment check as order sentences; no recommended quantity or
+  confidence figure can appear. Tests, `run_slice.py`'s pass/fail check and
+  the harness's abstain check updated to match. Harness results logged
+  above used the old, number-free template (cases 8–10). 77/77 tests;
+  `run_slice.py` abstain path → "… Please set it manually. Same day last
+  week: 90 units."
+- **Harness tables committed** (Harry's decision — a few derived numbers
+  from Kaggle data per row, 7–17 rows per table, no raw data) to
+  `results/explanation_harness/`: `judged.csv` (all 17 sentences, Harry's
+  and the judge's labels), `negative_control.csv`,
+  `comparison_words_before_after.csv`.
+- **README and PROJECT_OVERVIEW** updated with the sensitivity check,
+  explanation-layer results and the case-16 finding.
+- **Remaining:** ≤1200-word trade-off analysis and video, once the
+  instructor publishes requirements (due 2026-10-04).
