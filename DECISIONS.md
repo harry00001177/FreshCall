@@ -1335,3 +1335,38 @@ worked, which it now does.
 - **Polish level:** faithful and solid (cases only, no confidence figures,
   ASK ME with anchor, overrides, phone-width), tested logic, a README
   screenshot. No deployment for now; revisit after the report and video.
+
+---
+
+## 2026-09-25 — Manager UI built and tested in the browser
+
+`app.py` (Streamlit, one page) + `build_ui_cache.py` + tested logic in
+`src/freshcall/ui_logic.py`, per the UI decisions above.
+
+**Cache (real run):** store 44, 40 SKUs (fixed seed 42, still-selling
+only), 7 dates (every 14 days from 2017-05-16), 280 rows. 81 real
+gpt-4o-mini calls for rows some gate would answer, 0 template fallbacks.
+ASK ME share on these rows: case-straddle 71.1%, `rel_width` 0.60 98.6%.
+
+**Tested by using it in the browser (not just unit tests):**
+- Placing an order with ASK ME lines empty is refused and lists them.
+- Filled all 28 ASK ME lines, changed one suggestion (1 → 9 cases), placed:
+  "11 confirmed, 1 changed, 28 set by you"; the log file had exactly those
+  40 rows and outcomes (and is gitignored).
+- Evaluation view: switching to the original `rel_width` gate turns 16 May
+  into 40 of 40 ASK ME; "show what actually sold" adds the backtest outcome
+  and "matches / off by N" per suggestion.
+- Changing the date reloads that day (13 June: 30 of 40 need a call) and
+  resets the inputs.
+- Phone width (375 px): single column, full-width inputs, evaluation
+  sidebar collapsed.
+- Found and fixed while testing: "1 units" in both the outcome note and the
+  ASK ME anchor (now "1 unit"; ASK ME text is rendered from stored numbers
+  by the deterministic template, so the cache can't hold stale wording);
+  paths made relative to `app.py` so it runs from any directory; Streamlit's
+  "Deploy" toolbar hidden (`.streamlit/config.toml`).
+
+**Not done:** no README screenshot (the browser pane can't save one to a
+file; Harry to capture one while recording the video). The UI needs the
+Kaggle-derived cache, so it can't run from a clean clone without the data
+— the synthetic `--demo` path covers only `run_slice.py`. No deployment.

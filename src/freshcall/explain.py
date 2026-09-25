@@ -29,7 +29,7 @@ def render_template_fallback(fact_block: dict) -> str:
         anchor = fact_block.get("last_same_weekday")
         # reference anchor (DECISIONS.md 2026-09-22): a historical fact, not a
         # recommendation or a confidence figure, so it's the one number allowed here
-        return text if anchor is None else f"{text} Same day last week: {anchor:g} units."
+        return text if anchor is None else f"{text} Same day last week: {anchor:g} unit{'' if anchor == 1 else 's'}."
     return (
         f"ORDER {fact_block['recommend_cases']} cases. "
         f"Recent average {fact_block['recent_avg']}, "
