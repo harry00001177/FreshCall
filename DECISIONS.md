@@ -4,6 +4,37 @@ Format: date / decision / why + what was rejected / real numbers (or "not
 run yet"). This is raw material for resume bullets and interview stories —
 log every substantive step, including failed attempts.
 
+## Index
+
+1. 2026-09-22 — Repo initialized, terminology locked, plan grilled
+2. 2026-09-22 — Kaggle set up, real data explored, D3/D4/D7-adjacent decisions closed
+3. 2026-09-23 — Two eval-methodology fixes from instructor feedback on Milestone 1
+4. 2026-09-23 — Phase 1 (Section 8 minimal pipeline) implemented and run for real
+5. 2026-09-23 — Real gpt-4o-mini call verified end-to-end (not just the fallback)
+6. 2026-09-24 — Phase 2 pilot backtest (30 SKUs, 3 folds): two real findings, one good, one an open problem
+7. 2026-09-24 — Full 426-SKU backtest: the 30-SKU pilot's good news does not replicate at scale
+8. 2026-09-24 — CORRECTION to the entry above: the root cause was misdiagnosed
+9. 2026-09-24 — PRE-REGISTRATION of the fix, committed before any code changes
+10. 2026-09-24 — Post-fix full re-run: results, reported exactly as pre-registered
+11. 2026-09-24 — PRE-REGISTRATION: a new gate signal ("case-straddle"), tested on a fresh store
+12. 2026-09-24 — Case-straddle experiment results: passes the pre-registered test, but abstains far too often to use
+13. 2026-09-24 — Error decomposition: the ceiling isn't the problem, the price is
+14. 2026-09-24 — PRE-REGISTRATION: L1/L2 explanation harness (Section 7 eval check 4)
+15. 2026-09-24 — Harness batch 1 generated; it exposed a candidate-selection flaw
+16. 2026-09-24 — Harry's batch 1 labels; PRE-REGISTRATION of batch 2 and a sensitivity check
+17. 2026-09-24 — Sensitivity check results (active SKUs only) and harness batch 2 generated
+18. 2026-09-24 — L2 judge results, and a "true but misleading" sentence nobody flagged
+19. 2026-09-25 — PRE-REGISTRATION: negative-control test of the L2 judge
+20. 2026-09-25 — Negative-control results: the judge catches 5 of 6 flaws, misses overstatement, and its reasons aren't reliable
+21. 2026-09-25 — PRE-REGISTRATION: restrict the generator's comparison words
+22. 2026-09-25 — Comparison-word restriction: pre-registered criterion met (7/7)
+23. 2026-09-25 — Problem Statement v3: method changes written in, plan left as the plan
+24. 2026-09-25 — Wrap-up: reference anchor added, harness tables committed, docs refreshed
+25. 2026-09-25 — Watch-outs audit: decisions, and PRE-REGISTRATION of three checks
+26. 2026-09-25 — Monitor and look-ahead results; demo data added
+27. 2026-09-25 — Leak test result: one missing shift(1) would have faked a "target met"
+28. 2026-09-25 — Repo tidy: experiments/ folder, index, local cleanup
+
 ---
 
 ## 2026-09-22 — Repo initialized, terminology locked, plan grilled
@@ -1248,3 +1279,23 @@ predicted. Output `data/backtest_results_leaky.parquet`.
   feature — confirmed programmatically in the same run.
 - This is the "before-and-after" the Watch-outs ask for; the clean
   numbers remain the reported results.
+
+---
+
+## 2026-09-25 — Repo tidy: experiments/ folder, index, local cleanup
+
+- The 11 evaluation scripts moved into `experiments/` with `git mv`
+  (history kept); the core pipeline (`prepare_data.py`,
+  `make_demo_data.py`, `run_slice.py`, `run_backtest.py`) stays at the
+  root. No code changed. Entries above refer to scripts by their old root
+  paths. Verified after the move: all 11 import; 83/83 tests; the
+  read-only ones (`report_backtest`, case-gate experiment, decomposition,
+  monitors) reproduce the logged numbers exactly.
+- README: new layout and run commands; dataset link added.
+- This log: an index of entries added at the top.
+- Local only (gitignored, nothing tracked): deleted four intermediate data
+  files from the early ad-hoc exploration that no code uses any more
+  (`store44_qualifying_skus`, `store44_backtest_candidates`,
+  `derived_density`, `fully_integer_items`), and my own temp download and
+  unpack folders outside the repo. Raw Kaggle files, all backtest results
+  (including the pre-fix run) and the harness sheets are kept.

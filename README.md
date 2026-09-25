@@ -66,29 +66,30 @@ ordering (Layer B). `case_pack=12` is an assumption; see `config.yaml`.
 ## Layout
 
 ```text
-src/freshcall/      order, gate, case_gate, features, model, explain,
-                    containment, backtest, decomposition, harness, judge,
-                    monitors
-tests/              pytest suite for every module above
-prepare_data.py     raw Kaggle CSVs -> derived files the pipeline reads
-run_slice.py        one SKU, end to end (Problem Statement Section 8)
-run_backtest.py     multi-SKU, 3-fold rolling-origin backtest
-report_backtest.py  pre-registered tables from a saved backtest
-run_case_gate_experiment.py    pre-registered case-straddle experiment
-run_error_decomposition.py     catchable vs uncaught error breakdown
-run_sensitivity_active_skus.py same results without discontinued SKUs
-run_explanation_harness.py     L1 check + sheet for human labels
-run_judge.py                   L2 judge vs human labels
-run_judge_negative_control.py  does the judge catch flawed sentences?
-run_comparison_word_check.py   generator prompt change, before vs after
-run_leak_test.py               deliberate leak: before-and-after
-run_sensitivity_lookahead.py   results without look-ahead-selected SKUs
-run_monitors.py                bias / coverage monitors + positive control
-make_demo_data.py              synthetic demo series (demo/)
-config.yaml         all assumptions (case_pack, safety, gate threshold...)
-results/            evaluation tables committed for review
-docs/               problem statement (v2 as submitted, v3 current),
-                    project overview, original handoff
+src/freshcall/   the system: order, gate, case_gate, features, model,
+                 explain, containment, monitors, backtest, decomposition,
+                 harness, judge
+tests/           pytest suite for every module above
+prepare_data.py  raw Kaggle CSVs -> derived files the pipeline reads
+make_demo_data.py  synthetic demo series (demo/), no Kaggle data needed
+run_slice.py     one SKU, end to end (Problem Statement Section 8)
+run_backtest.py  multi-SKU, 3-fold rolling-origin backtest
+experiments/     every evaluation in DECISIONS.md, one script each:
+  report_backtest.py              pre-registered tables from a backtest
+  run_case_gate_experiment.py     case-straddle gate, store 49 confirmation
+  run_error_decomposition.py      catchable vs uncaught errors
+  run_sensitivity_active_skus.py  without discontinued SKUs
+  run_sensitivity_lookahead.py    without look-ahead-selected SKUs
+  run_leak_test.py                deliberate leak: before and after
+  run_monitors.py                 bias / coverage monitors + positive control
+  run_explanation_harness.py      L1 check + sheet for human labels
+  run_judge.py                    L2 judge vs human labels
+  run_judge_negative_control.py   does the judge catch flawed sentences?
+  run_comparison_word_check.py    generator prompt change, before vs after
+config.yaml      all assumptions (case_pack, safety, gate threshold...)
+results/         evaluation tables committed for review
+docs/            problem statement (v2 as submitted, v3 current),
+                 project overview (Chinese), original handoff
 ```
 
 ## Quick demo (no Kaggle data needed)
@@ -121,6 +122,8 @@ deterministic template.
 
 ## Data
 
+Source: [Corporación Favorita Grocery Sales Forecasting](https://www.kaggle.com/competitions/favorita-grocery-sales-forecasting) (Kaggle; 125,497,040 training rows, 54 stores, 4,100 items).
+
 Raw Kaggle data is never committed (competition rules prohibit
 redistribution). You need a Kaggle account, the competition rules accepted
 on the competition page, and an API token (Kaggle CLI 2.x reads
@@ -137,18 +140,29 @@ minutes (it scans the ~5 GB `train.csv`).
 
 ## Run
 
+From the repository root:
+
 ```bash
 python -m pytest
 PYTHONPATH=src python run_slice.py
 PYTHONPATH=src python run_backtest.py data/full_426_skus.parquet
-PYTHONPATH=src python report_backtest.py data/backtest_results.parquet
-PYTHONPATH=src:. python run_case_gate_experiment.py
-PYTHONPATH=src python run_error_decomposition.py
-PYTHONPATH=src:. python run_sensitivity_active_skus.py
-PYTHONPATH=src python run_explanation_harness.py 1   # then label, then:
-PYTHONPATH=src python run_judge.py
-PYTHONPATH=src:. python run_leak_test.py
-PYTHONPATH=src python run_monitors.py
 ```
 
-The full backtest takes about 6 minutes per store.
+Experiments (they import each other, hence the longer path):
+
+```bash
+export PYTHONPATH=src:.:experiments
+python experiments/report_backtest.py data/backtest_results.parquet
+python experiments/run_case_gate_experiment.py
+python experiments/run_error_decomposition.py
+python experiments/run_sensitivity_active_skus.py
+python experiments/run_sensitivity_lookahead.py
+python experiments/run_leak_test.py
+python experiments/run_monitors.py
+python experiments/run_explanation_harness.py 1   # then label, then:
+python experiments/run_judge.py
+```
+
+The full backtest (and the leak test) take about 6 minutes per store.
+The explanation and judge scripts call paid APIs and overwrite their
+sheets under `data/l1l2/`.
