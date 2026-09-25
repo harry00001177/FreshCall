@@ -1613,3 +1613,48 @@ today). Still assumptions — no timing has been measured with a real
 manager — but the conclusion doesn't hinge on any particular guess.
 (It excludes time spent overriding lines, which depends on how often a
 manager knows something the model doesn't — unmeasurable here.)
+
+---
+
+## 2026-09-25 — Explanation fix, batch 3 results: pre-registered SUCCESS; two new problems found
+
+**Harry's labels (blind):** faithful / usable / direction — yes on all 14.
+Note: "the order is in cases but the reason is in units, with no unit
+named — could confuse the manager."
+
+**Pre-registered criterion:** case 16's new sentence ("ORDER 1 case.
+Tuesdays have averaged 11, lower than last Tuesday's 21.") gets "yes" on
+direction from Harry; L1 14/14; no "no" from Harry on questions 1–2 —
+**met.** Case 16 now points the same way as its order.
+
+**Judge (Claude Haiku 4.5, 3 questions):** faithful 12/14, usable 14/14,
+direction 11/14 → 5 disagreements with Harry. Checked each against the
+data deterministically (comparison word vs the numbers; order vs the case
+count last week's sales imply):
+- Direction: every sentence whose order is *below* last week's case count
+  says "lower" (cases 12, 16, 101, 105); the one *above* says "higher"
+  (106); the rest are equal. The judge's three direction "no"s (12, 13,
+  105) are wrong — its reasons treat a correct "lower" as contradicting a
+  lower order. Harry was right.
+- Faithful: the judge's "no" on 14 ("higher" called unsupported for 7.2 vs
+  6.0) is wrong. Its "no" on 13 lands on a real problem but gives a false
+  reason ("the sentence reverses this").
+- Consistent with the negative-control finding: the judge's verdicts can
+  be useful as a screen, its reasons can't be trusted.
+
+**New problem 1 — the "about the same" rule is not reliably followed.**
+The prompt says "about the same" when within 10%. Two of 14 break it:
+case 13 (6.5 vs 7.0, 7% apart) says "lower"; case 17 (39.5 vs 37.0, 6%
+apart) says "higher". Both true, both against the rule — the first time
+the "about the same" branch was exercised (it was untested in the
+comparison-word check). An LLM applying a numeric threshold is exactly
+what "the LLM never touches numbers" was meant to avoid.
+
+**New problem 2 (Harry) — mixed units.** "ORDER 1 case. Tuesdays have
+averaged 11 …" — 11 what? The order is in cases, the reason in unlabelled
+units; a manager could read 11 as cases. (Suggestively, the judge's wrong
+direction calls come from the same mix — it compared a case count with
+unit averages.) The Problem Statement's own target output already showed
+both: "ORDER 3 cases (36 units)."
+
+Next: decide how to fix both before the UI is rebuilt.
