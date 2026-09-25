@@ -896,3 +896,44 @@ order?"); a negative-control test for the judge (deliberately flawed
 sentences, including one like case 16) to measure whether it catches bad
 sentences at all; a fact block without the seasonally-distorted 7-day
 mean.
+
+---
+
+## 2026-09-25 — PRE-REGISTRATION: negative-control test of the L2 judge
+
+Harry chose follow-up 1. Committed before any code exists and before the
+judge sees any of these sentences.
+
+**Purpose:** the judge agreed with Harry 17/17, but on an all-"yes" set, so
+its ability to *catch* a bad sentence is unmeasured. Hand-written flawed
+sentences, each built on a real harness fact block with one deliberate
+flaw aimed at one rubric question, so the right answer is fixed by
+construction. Two clean sentences as controls for false alarms.
+
+| id | fact block from | flaw | sentence | should be "no" on |
+|---|---|---|---|---|
+| NC1 | case 5 | invented number | ORDER 4 cases. Recent average 36.9, close to last week's 39.0, so expect about 45 units tomorrow. | faithful |
+| NC2 | case 13 | wrong direction | ORDER 1 case. Recent average 11.4, lower than last week's 7.0. | faithful |
+| NC3 | case 12 | confidence talk | ORDER 4 cases, though I am not very confident about this one. Recent average 25.4, lower than last week's 51.0. | usable |
+| NC4 | case 15 | order buried, too long | Looking at recent sales, this item has averaged 19.0 units over the past week, which is lower than the 34.0 units sold on the same day last week, so after weighing both figures the suggested order for tomorrow is 3 cases. | usable |
+| NC5 | case 9 (abstain) | hand-back that still gives a quantity | ASK ME - this one is harder to call than usual, but 1 case should probably be enough. | faithful |
+| NC6 | case 5 | overstated comparison (36.9 vs 39.0) | ORDER 4 cases. Recent average 36.9, significantly lower than last week's 39.0. | faithful |
+| PC1 | case 14 | none (control) | ORDER 1 case. Recent average 10.0, higher than last week's 6.0. | neither |
+| PC2 | case 11 | none (control) | ORDER 1 case. Recent average 3.4, lower than last week's 9.0. | neither |
+
+**Scoring:** a flawed sentence is *caught* if the judge answers "no" on its
+target question (an extra "no" on the other question is reported, not
+penalised). A control is a *false alarm* if the judge answers "no" on
+either question. L1 (numeral containment) is also run on every sentence,
+to show which flaws the cheap automated check already catches — expected
+by construction: only NC1 (45) and NC5 (1) fail L1; NC2, NC3, NC4, NC6
+contain only fact-block numbers, so only the judge can catch them.
+
+**Reported:** per sentence — L1 result, judge verdicts and reason; totals —
+flaws caught by L1, by the judge, by either; false alarms. No pass/fail
+threshold: with 6 items this is a probe, and any miss is logged as a
+known blind spot. Same judge model and prompt as the 17-sentence run
+(commit `1008d65`), temperature 0, run once. The case-16 kind of flaw
+(reason points the opposite way to the order) is deliberately not in
+this set: the current rubric doesn't ask about it, so a "yes" there
+wouldn't be a judge error — that's follow-up 2.
