@@ -20,6 +20,19 @@ def build_fact_block(sku_name, abstain, recommend_cases, recent_avg, last_same_w
     }
 
 
+def build_fact_block_v2(sku_name, recommend_cases, weekday, weekday_avg, last_same_weekday, abstain=False) -> dict:
+    """v2 (DECISIONS.md 2026-09-25): the reason uses the same weekday's
+    4-week average instead of a 7-day mean that weekend spikes distort."""
+    return {
+        "sku_name": sku_name,
+        "abstain": abstain,
+        "recommend_cases": recommend_cases,
+        "weekday": weekday,
+        "weekday_avg": weekday_avg,
+        "last_same_weekday": last_same_weekday,
+    }
+
+
 def render_template_fallback(fact_block: dict) -> str:
     """Deterministic, LLM-free wording. Used directly for every abstain
     SKU-day, and as the fallback for any order SKU-day whose LLM output
@@ -30,11 +43,62 @@ def render_template_fallback(fact_block: dict) -> str:
         # reference anchor (DECISIONS.md 2026-09-22): a historical fact, not a
         # recommendation or a confidence figure, so it's the one number allowed here
         return text if anchor is None else f"{text} Same day last week: {anchor:g} unit{'' if anchor == 1 else 's'}."
+    if "weekday_avg" in fact_block:
+        n, day = fact_block["recommend_cases"], fact_block["weekday"]
+        return (f"ORDER {n} case{'' if n == 1 else 's'}. Recent {day}s averaged {fact_block['weekday_avg']:g}, "
+                f"last {day} {fact_block['last_same_weekday']:g}.")
     return (
         f"ORDER {fact_block['recommend_cases']} cases. "
         f"Recent average {fact_block['recent_avg']}, "
         f"last same weekday {fact_block['last_same_weekday']}."
     )
+
+
+SYSTEM_PROMPT_V1 = (
+    "You write a one-line order recommendation for a restaurant manager "
+    "who has 5 seconds to read it, not a data summary. Always start with "
+    "'ORDER {recommend_cases} cases.' exactly, then one short clause "
+    "giving the reason, using ONLY the numbers in the fact block below. "
+    "Compare recent_avg with last_same_weekday using exactly one of "
+    "'higher than', 'lower than', or 'about the same as' (the last only "
+    "when the two are within 10% of each other). Never add intensity "
+    "words such as 'significantly', 'sharply', 'slightly' or 'much'. "
+    "Never write a number that is not in the fact block. Never mention "
+    "confidence, probability, or uncertainty.\n\n"
+    "Example — fact block {'recommend_cases': 3, 'recent_avg': 30, "
+    "'last_same_weekday': 28}\n"
+    "Good: \"ORDER 3 cases. Recent average 30, about the same as last week's 28.\"\n"
+    "Bad: \"The recommended order is 3 cases based on a recent average "
+    "of 30 units and a similar figure of 28 units last week.\" "
+    "(too long, reads like a report, not an instruction)"
+)
+
+
+SYSTEM_PROMPT_V2 = (
+    "You write a one-line order recommendation for a restaurant manager "
+    "who has 5 seconds to read it, not a data summary. Always start with "
+    "'ORDER {recommend_cases} cases.' exactly, then one short clause "
+    "giving the reason, using ONLY the numbers in the fact block below. "
+    "weekday_avg is the average of the same weekday over the last 4 weeks; "
+    "compare it with last_same_weekday using exactly one of 'higher than', "
+    "'lower than', or 'about the same as' (the last only when the two are "
+    "within 10% of each other), and name the weekday. Never add intensity "
+    "words such as 'significantly', 'sharply', 'slightly' or 'much'. "
+    "Never write a number that is not in the fact block. Never mention "
+    "confidence, probability, or uncertainty.\n\n"
+    "Example — fact block {'recommend_cases': 3, 'weekday': 'Tuesday', "
+    "'weekday_avg': 30, 'last_same_weekday': 28}\n"
+    "Good: \"ORDER 3 cases. Tuesdays have averaged 30, about the same as last Tuesday's 28.\"\n"
+    "Bad: \"The recommended order is 3 cases based on an average of 30 "
+    "units on recent Tuesdays and 28 units last Tuesday.\" "
+    "(too long, reads like a report, not an instruction)"
+)
+
+
+def system_prompt_for(fact_block: dict) -> str:
+    """v2 fact blocks (same-weekday average) get the v2 prompt; v1 blocks keep
+    the original prompt, so every earlier experiment still reproduces."""
+    return SYSTEM_PROMPT_V2 if "weekday_avg" in fact_block else SYSTEM_PROMPT_V1
 
 
 def _default_call_llm(fact_block: dict) -> str:
@@ -47,24 +111,7 @@ def _default_call_llm(fact_block: dict) -> str:
         base_url="https://openrouter.ai/api/v1",
         api_key=os.environ["OPENROUTER_API_KEY"],
     )
-    system_prompt = (
-        "You write a one-line order recommendation for a restaurant manager "
-        "who has 5 seconds to read it, not a data summary. Always start with "
-        "'ORDER {recommend_cases} cases.' exactly, then one short clause "
-        "giving the reason, using ONLY the numbers in the fact block below. "
-        "Compare recent_avg with last_same_weekday using exactly one of "
-        "'higher than', 'lower than', or 'about the same as' (the last only "
-        "when the two are within 10% of each other). Never add intensity "
-        "words such as 'significantly', 'sharply', 'slightly' or 'much'. "
-        "Never write a number that is not in the fact block. Never mention "
-        "confidence, probability, or uncertainty.\n\n"
-        "Example — fact block {'recommend_cases': 3, 'recent_avg': 30, "
-        "'last_same_weekday': 28}\n"
-        "Good: \"ORDER 3 cases. Recent average 30, about the same as last week's 28.\"\n"
-        "Bad: \"The recommended order is 3 cases based on a recent average "
-        "of 30 units and a similar figure of 28 units last week.\" "
-        "(too long, reads like a report, not an instruction)"
-    )
+    system_prompt = system_prompt_for(fact_block)
     response = client.chat.completions.create(
         model="openai/gpt-4o-mini",
         temperature=0,

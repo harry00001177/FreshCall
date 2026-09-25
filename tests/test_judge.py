@@ -23,3 +23,12 @@ class TestParseVerdict:
     def test_non_json_is_marked_unparseable(self):
         v = parse_verdict("The sentence looks fine to me.")
         assert v == {"faithful": "unparseable", "usable": "unparseable", "reason": "The sentence looks fine to me."}
+
+    def test_three_question_verdict(self):
+        v = parse_verdict('{"faithful": "yes", "usable": "yes", "direction": "no", "reason": "points up"}',
+                          keys=("faithful", "usable", "direction"))
+        assert v["direction"] == "no" and v["faithful"] == "yes"
+
+    def test_three_question_unparseable_marks_all_three(self):
+        v = parse_verdict("no json", keys=("faithful", "usable", "direction"))
+        assert v["direction"] == "unparseable"

@@ -5,7 +5,22 @@ information from day N or later."""
 
 import pandas as pd
 
-from freshcall.features import add_features, build_daily_grid
+from freshcall.features import add_features, build_daily_grid, same_weekday_avg
+
+
+class TestSameWeekdayAvg:
+    def test_averages_the_same_weekday_over_the_previous_four_weeks(self):
+        s = pd.Series(range(1, 36), index=pd.date_range("2017-06-01", periods=35), dtype=float)
+        # day 35 (value 35): same weekday 7/14/21/28 days earlier = values 28, 21, 14, 7
+        assert same_weekday_avg(s).iloc[-1] == (28 + 21 + 14 + 7) / 4
+
+    def test_never_uses_the_day_itself_or_other_weekdays(self):
+        s = pd.Series([0.0] * 34 + [1000.0], index=pd.date_range("2017-06-01", periods=35))
+        assert same_weekday_avg(s).iloc[-1] == 0.0
+
+    def test_needs_four_full_weeks_of_history(self):
+        s = pd.Series(range(20), index=pd.date_range("2017-06-01", periods=20), dtype=float)
+        assert pd.isna(same_weekday_avg(s).iloc[-1])
 
 
 class TestBuildDailyGrid:

@@ -7,7 +7,9 @@ without an API key."""
 import re
 
 from freshcall.containment import check_numeral_containment
-from freshcall.explain import build_fact_block, generate_explanation, render_template_fallback
+from freshcall.explain import (
+    build_fact_block, build_fact_block_v2, generate_explanation, render_template_fallback, system_prompt_for,
+)
 
 
 class TestBuildFactBlock:
@@ -26,6 +28,28 @@ class TestBuildFactBlock:
         )
         assert fb["recommend_cases"] is None
         assert fb["abstain"] is True
+
+
+class TestFactBlockV2:
+    def _fb(self):
+        return build_fact_block_v2(sku_name="item 7", recommend_cases=1, weekday="Tuesday",
+                                   weekday_avg=12.5, last_same_weekday=21.0)
+
+    def test_carries_the_weekday_average_not_a_seven_day_mean(self):
+        fb = self._fb()
+        assert fb["weekday_avg"] == 12.5 and fb["weekday"] == "Tuesday"
+        assert "recent_avg" not in fb
+
+    def test_template_uses_only_fact_block_numbers(self):
+        fb = self._fb()
+        text = render_template_fallback(fb)
+        assert text.startswith("ORDER 1 case")
+        assert "Tuesday" in text
+        assert check_numeral_containment(text, fb)
+
+    def test_v2_blocks_get_the_v2_prompt(self):
+        assert "weekday_avg" in system_prompt_for(self._fb())
+        assert "recent_avg" in system_prompt_for(build_fact_block("x", False, 3, 30, 28))
 
 
 class TestRenderTemplateFallback:
