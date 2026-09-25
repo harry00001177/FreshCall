@@ -1106,3 +1106,62 @@ as is.
   explanation-layer results and the case-16 finding.
 - **Remaining:** ≤1200-word trade-off analysis and video, once the
   instructor publishes requirements (due 2026-10-04).
+
+---
+
+## 2026-09-25 — Watch-outs audit: decisions, and PRE-REGISTRATION of three checks
+
+**Audit:** checked the project against the instructor's Watch-outs doc
+line by line. Gaps found: no leakage before/after comparison; the Problem
+Statement's §8 table is headed "Mitigation (built, not described)" but
+only numeral containment + fallback and the abstain gate were built;
+the repo can't run without the Kaggle data. Also found while hunting for
+leakage: SKU selection computed density over each SKU's *full* history,
+including the test windows — using only data up to 2017-05-15, store 44's
+list would be 421 SKUs, not 426; **5 SKUs got in only because of
+test-period sales** (a look-ahead in selection, found by us).
+
+**Decisions (Harry, 2026-09-25):**
+- Leak test: inject the realistic bug — a 7-day mean that includes the
+  day being predicted (a forgotten `.shift(1)`) — not same-day sales.
+- Look-ahead SKUs: sensitivity check excluding them; originals stay primary.
+- Build two monitors (bias, coverage); list the rest honestly as not built.
+  Problem Statement v3 not edited again (it's the plan).
+- Ship synthetic demo data + its generator, not a real-data sample.
+- Low-code: never tried. Report states why code was chosen directly
+  (gate threshold and case arithmetic must be unit-testable and diffable
+  in git; GUI-configured logic can't be asserted in pytest).
+
+**Pre-registered, before any code for these exists:**
+
+*1. Leak test.* Re-run the store-44 backtest (426 SKUs × 3 folds, same
+model and folds) with one change: `rolling_7_mean` computed *without*
+`shift(1)`, so it includes the day being predicted. Saved to its own file.
+Report, next to the clean run: pooled model CMR vs naive CMR at 0.60 and
+1.00, coverage, and case-straddle lift. Also report whether the existing
+unit test `test_rolling_7_mean_excludes_todays_value` fails against the
+leaky feature (i.e. whether our tests would have caught this bug).
+
+*2. Look-ahead sensitivity.* For each store, drop the SKUs that are in the
+current list but not in the list built from data up to 2017-05-15; recompute
+from stored predictions (no refit). Report case-straddle lift, `rel_width`
+lift at 0.60 / 1.00, and forecaster relative improvement.
+
+*3. Monitors*, on each store's stored predictions, all folds:
+- *Bias monitor:* per day, mean signed case error across SKUs
+  (P50-implied cases − hindsight cases, whether or not the gate
+  abstained); 7-day rolling mean.
+- *Coverage monitor:* per day, share of SKUs whose actual falls inside
+  [P10, P90]; 7-day rolling mean.
+- *Thresholds from data, not chosen by eye:* fitted on fold 1 only
+  (mean ± 3 standard deviations of the rolling values; coverage alerts on
+  the lower side only), then applied to folds 2–3.
+- *Positive control* (does a monitor fire when it should?): copy store 44's
+  rows, multiply actual sales by 1.5 from 2017-08-01 onward (recomputing
+  hindsight), run the bias monitor with the same fold-1 thresholds. It
+  should alert within 7 days of 2017-08-01; report the first alert date.
+- Report alert counts and dates. No alerts on the real data is a
+  legitimate result (there's no known regime break in the test windows),
+  which is exactly why the positive control exists.
+
+No thresholds, windows or scaling factors are changed after seeing results.
