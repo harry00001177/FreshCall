@@ -20,7 +20,8 @@ FOLDS = [
 FEATURE_COLS_STATIC = ["lag_1", "lag_7", "rolling_7_mean"]
 
 
-def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, cfg: dict) -> list[dict]:
+def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, cfg: dict,
+                      features_fn=add_features) -> list[dict]:
     """Fit once on data up to fold['train_end'], predict every day in
     [test_start, test_end]. Returns one dict per test day, or [] if there
     isn't enough training history for this SKU to reach this fold."""
@@ -30,7 +31,7 @@ def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold:
         return []
 
     grid = build_daily_grid(sku, start=sku["date"].min(), end=fold["test_end"])
-    feats = add_features(grid)
+    feats = features_fn(grid)
     dow_cols = [c for c in feats.columns if c.startswith("dow_")]
     feature_cols = dow_cols + FEATURE_COLS_STATIC
 
