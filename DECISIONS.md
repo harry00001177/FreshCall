@@ -1541,3 +1541,55 @@ orders for less of the manager's time — holds up on an unseen store once
 the product stops handing uncertain SKUs back and instead shows every
 order with its likely range. The original abstention idea failed; the
 redesign built from understanding *why* it failed passes.
+
+---
+
+## 2026-09-25 — Decisions after the redesign result; PRE-REGISTRATION of the explanation fix
+
+**Decisions (Harry, grilled 2026-09-25):**
+- **Routine SKUs:** a store-level business setting `routine_policy`
+  (`model` | `last_week`), default `model`. On stores 44 / 8, `last_week`
+  trades about 4.6–4.7 units less waste for each extra unit short (and
+  more wrong cases), so it pays only if a unit short costs less than ~4.6
+  units wasted — a cost only the store knows. Default `model` because a
+  missing QSR ingredient often blocks several menu items and because this
+  data overstates waste on exactly these SKUs (no carry-over stock). Both
+  policies' numbers are already measured; no new experiment.
+- **System default = the redesign** (every SKU gets an order + range; no
+  ASK ME). `gate.type` gains `none`. The UI's evaluation view keeps a
+  "design version" switch — redesign (system) / v2 case-straddle + ASK ME /
+  v1 `rel_width` + ASK ME — labelled as history, for comparison.
+- **Range wording:** "ORDER 3 cases · likely 2–4"; a one-value range shows
+  just "ORDER 3 cases". The range is rendered by deterministic UI code,
+  never written by the LLM.
+- **Timing:** replace single assumed timings with a sensitivity table
+  (redesign 5 / 10 / 15 s per non-routine SKU × today 20 / 30 / 45 s).
+
+**PRE-REGISTERED — the explanation fix (case 16), before any code:**
+
+*Change:* the fact block's "recent average" (last 7 days, distorted by
+weekend spikes — the cause of case 16) is replaced by the **average of the
+same weekday over the previous 4 weeks** (days −7, −14, −21, −28), plus the
+weekday's name. The prompt compares that average with last week's same
+day using the existing restricted words (higher / lower / about the same).
+Old fact block, prompt and experiment scripts are kept untouched so every
+earlier result still reproduces.
+
+*New rubric question 3 (Harry and the judge):* "Does the reason point the
+same way as the order?" — i.e. would a manager reading the reason be pushed
+towards ordering more when the order is low, or less when it is high?
+
+*Batch 3 (store 44 post-fix predictions, non-routine SKU-days only):*
+(a) the 7 batch-2 SKU-days (cases 11–17, including case 16) — before/after
+on the same inputs; (b) 7 SKU-days not used before, drawn with seed 43 from
+non-routine SKU-days with P50 ≥ 1 — so the fix isn't judged only on the
+case it was designed for.
+
+*Reported:* L1 on raw output; Harry's labels on all 3 questions (given
+before any judge output, and without my comments); judge (Claude Haiku
+4.5) on the same 3 questions; judge–Harry disagreements; for (a), old vs
+new sentence side by side.
+
+*Success:* Harry answers "yes" to question 3 for case 16's new sentence,
+L1 passes 14/14, and no sentence gets a "no" from Harry on questions 1–2.
+If not, reported as is; the fact block isn't iterated on these cases.
