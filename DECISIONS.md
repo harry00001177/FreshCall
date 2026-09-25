@@ -1692,3 +1692,34 @@ questions) runs after, and its disagreements are reported.
 
 *Success:* checks 1–3 all 14/14 AND Harry "yes" on all 3 questions for all
 14. If not, reported as is.
+
+---
+
+## 2026-09-25 — Template sentence results: pre-registered SUCCESS; the judge is unreliable on "direction"
+
+`experiments/run_explanation_v3.py` (commit `3fc1ca9` before generating).
+Same 14 SKU-days as batch 3.
+
+- **Deterministic checks:** L1 14/14; comparison word correct under the 10%
+  rule 14/14 (cases 13 and 17 now say "about the same", which the LLM got
+  wrong); units stated for the order and the average 14/14.
+- **Harry (blind):** yes on faithful / usable / direction for all 14.
+- **Pre-registered criterion: met.** Example — case 16: "ORDER 1 case (12
+  units). Tuesdays have averaged 11 units, lower than last Tuesday's 21."
+- **Judge (Haiku, 3 questions):** faithful 12/14, usable 14/14, direction
+  **7/14** — more disagreement than on the LLM sentences (3). Its direction
+  reasons share one misreading: it treats "lower than last week" as
+  contradicting *any* non-zero order, never comparing the order with the
+  case count last week implies (the deterministic check shows every
+  direction is consistent), and once calls 36 units "exceeding" 38. Its
+  two faithful "no"s are wording disagreements, not errors: it thinks 39.5
+  vs 37 (6% apart) shouldn't be "about the same" (our 10% rule), and that
+  "higher than last Tuesday's 0" lacks context — fair: a zero last week may
+  have been a stockout, which the sentence can't know.
+- **Judge overall, across batches 1–3 and the negative control:** screens
+  invented numbers and blatant wording flaws; misses overstatement; its
+  direction verdicts and its reasons are not reliable. Useful as a first
+  screen only — human labels stay the reference.
+
+**Adopted:** the v3 template is the system's order sentence (UI and
+`run_slice.py`). The manager-facing path now makes no LLM call.
