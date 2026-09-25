@@ -1593,3 +1593,23 @@ new sentence side by side.
 *Success:* Harry answers "yes" to question 3 for case 16's new sentence,
 L1 passes 14/14, and no sentence gets a "no" from Harry on questions 1–2.
 If not, reported as is; the fact block isn't iterated on these cases.
+
+---
+
+## 2026-09-25 — Manager-time sensitivity table
+
+`experiments/run_time_sensitivity.py`. Minutes per 40-SKU night, redesign
+(routine SKUs 1 s) vs today, over a grid of unmeasured timings:
+
+| redesign s / non-routine SKU | store 44 vs today 20 / 30 / 45 s | store 8 vs today 20 / 30 / 45 s |
+|---|---|---|
+| 5 | 2.9 vs 13 / 20 / 30 | 2.3 vs 13 / 20 / 30 |
+| 10 | 5.6 vs 13 / 20 / 30 | 4.3 vs 13 / 20 / 30 |
+| 15 | 8.4 vs 13 / 20 / 30 | 6.4 vs 13 / 20 / 30 |
+
+"The redesign takes less of the manager's time" holds in all 9
+combinations, including the least favourable (15 s per line vs 20 s
+today). Still assumptions — no timing has been measured with a real
+manager — but the conclusion doesn't hinge on any particular guess.
+(It excludes time spent overriding lines, which depends on how often a
+manager knows something the model doesn't — unmeasurable here.)
