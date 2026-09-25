@@ -983,3 +983,41 @@ judge 5/6; either 5/6; false alarms 0/2.
 telling the generator to use only "higher / lower / about the same", no
 intensity words — cheaper and more reliable than hoping the judge
 notices; the third rubric question from the case-16 finding.
+
+---
+
+## 2026-09-25 — PRE-REGISTRATION: restrict the generator's comparison words
+
+Harry chose to fix the overstatement blind spot at the source. Committed
+before the prompt is edited and before any new sentence is generated.
+
+**The change (and nothing else):** the system prompt in `explain.py` tells
+the generator to compare `recent_avg` with `last_same_weekday` using
+exactly one of "higher than", "lower than", "about the same as" — the
+last only when the two are within 10% of each other — and never to add
+intensity words ("significantly", "sharply", "slightly", "much", …). The
+in-prompt good example changes from "similar to" to "about the same as"
+so the example obeys the new rule. Model, temperature, token limit, fact
+block, containment check, fallback: unchanged.
+
+**Considered, not chosen:** computing the comparison word in Python and
+putting it in the fact block, so the LLM never judges the numbers at all.
+More in line with "the LLM never touches numbers", but a bigger change;
+kept as a follow-up.
+
+**Test:** regenerate the 7 batch-2 sentences (cases 11–17, same fact
+blocks) once. Old sentences stay in `cases_batch2.csv`; new ones go to
+`cases_batch2_v2.csv`. Checked deterministically, no judge and no
+relabelling (the property under test is mechanically checkable):
+1. L1 on raw output;
+2. no intensity word from a fixed list (significantly, sharply, slightly,
+   much, far, considerably, substantially, dramatically, notably,
+   markedly, greatly, strongly, marginally, somewhat, a lot, a bit);
+3. exactly one allowed comparison phrase, and it is correct: "higher" iff
+   recent_avg > last_same_weekday, "lower" iff <, "about the same" only if
+   within 10% (|a − b| / max(a, b) ≤ 0.10);
+4. opens with "ORDER".
+
+**Success:** all four hold for 7/7. **If not:** reported as is — the prompt
+isn't iterated again on these same 7 cases (that would be tuning to the
+test).
