@@ -8,16 +8,14 @@ from functools import lru_cache
 
 import pandas as pd
 import yaml
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from freshcall.containment import check_numeral_containment
-from freshcall.explain import build_fact_block, generate_explanation
-from freshcall.features import add_features, build_daily_grid
+from freshcall.explain import build_fact_block, build_fact_block_v3, order_sentence_from, render_template_fallback
+from freshcall.features import add_features, build_daily_grid, same_weekday_avg
 from freshcall.gate import decide_abstain, rel_width
 from freshcall.model import fit_quantile_models, predict_quantiles
 from freshcall.order import hindsight_demand_order, recommended_cases
+from freshcall.redesign import case_range
 
 FEATURE_COLS_STATIC = ["lag_1", "lag_7", "rolling_7_mean"]
 
@@ -73,7 +71,8 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     abstain = decide_abstain(p10, p50, p90, cfg)
 
     actual = float(predict_row["unit_sales"].iloc[0])
-    recent_avg = round(float(train["unit_sales"].tail(7).mean()), 1)
+    predict_date = predict_row["date"].iloc[0]
+    weekday_avg = round(float(same_weekday_avg(feats.set_index("date")["unit_sales"]).loc[predict_date]), 1)
     last_same_weekday = round(float(predict_row["lag_7"].iloc[0]), 1)
 
     case_pack, safety, on_hand = cfg["case_pack"], cfg["safety"], cfg["on_hand"]
@@ -81,14 +80,14 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     units = None if abstain else cases * case_pack
     hindsight = hindsight_demand_order(actual, case_pack)
 
-    fact_block = build_fact_block(
-        sku_name=f"item {item_nbr}",
-        abstain=abstain,
-        recommend_cases=cases,
-        recent_avg=recent_avg,
-        last_same_weekday=last_same_weekday,
-    )
-    text = generate_explanation(fact_block)
+    lo, _, hi = case_range(p10, p50, p90, safety, on_hand, case_pack)
+    if abstain:  # only under the history gates (v1/v2); the system gate is `none`
+        fact_block = build_fact_block(f"item {item_nbr}", True, None, None, last_same_weekday)
+        text = render_template_fallback(fact_block)
+    else:  # v3: deterministic sentence, no LLM call (DECISIONS.md 2026-09-25)
+        fact_block = build_fact_block_v3(f"item {item_nbr}", cases, case_pack, predict_date.day_name(),
+                                         weekday_avg, last_same_weekday)
+        text = order_sentence_from(fact_block)
     elapsed = time.time() - t0
 
     result = {
@@ -96,7 +95,7 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
         "rel_width": rel_width(p10, p50, p90),
         "abstain": abstain, "actual": actual,
         "hindsight_demand_order": hindsight,
-        "cases": cases, "units": units, "case_pack": case_pack,
+        "cases": cases, "units": units, "case_pack": case_pack, "range": (lo, hi),
         "text": text, "elapsed": elapsed,
         "fact_block": fact_block,
     }
@@ -111,7 +110,8 @@ def print_report(result: dict) -> None:
     print(f"Actual next-day sales: {result['actual']}")
     print(f"hindsight_demand_order: {result['hindsight_demand_order']} cases (eval-only, not shown to manager)")
     if not result["abstain"]:
-        print(f"Recommended: {result['cases']} cases ({result['units']} units)")
+        lo, hi = result["range"]
+        print(f"Recommended: {result['cases']} cases ({result['units']} units), likely {lo}-{hi}")
     print(f"Output sentence: {result['text']}")
     print(f"Elapsed: {result['elapsed']:.2f}s")
 

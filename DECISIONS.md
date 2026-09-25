@@ -1723,3 +1723,31 @@ Same 14 SKU-days as batch 3.
 
 **Adopted:** the v3 template is the system's order sentence (UI and
 `run_slice.py`). The manager-facing path now makes no LLM call.
+
+---
+
+## 2026-09-25 — UI rebuilt for the redesign; very wide ranges found
+
+**Built** (`app.py`, `build_ui_cache.py`, `ui_logic.range_text` /
+`widest_first`, `run_slice.py`): every SKU shows "ORDER n cases (n×12
+units)" plus "likely lo–hi" when P10 and P90 imply different case counts;
+non-routine lines listed widest range first; routine SKUs collapsed as
+standing orders under `routine_policy`; the order sentence is the v3
+template (no LLM anywhere on the manager's path; the cache build no longer
+calls the LLM either). History view keeps v2 / v1 (ASK ME) for comparison.
+
+**Tested in the browser:** store 44, 16 May: 31 lines "worth a look", 9
+standing orders (expander holds 9 inputs; 40 in total); "Place order" with
+no changes → "40 confirmed, 0 changed, 0 set by you"; history v2 shows
+28 of 40 ASK ME as before; no console errors.
+
+**Problem found while testing:** the top line read "ORDER 14 cases (168
+units) · likely 1–21" (item 1584575: P10 11.6, P50 165.2, P90 243.4 units;
+actual 253). A 1–21-case range is useless to a manager and invites
+distrust — and "widest first" puts it at the very top. How common, over
+SKU-days with an order of ≥ 1 case: width ≥ 5 cases on 5.6% (store 44) /
+1.4% (store 8); in those, the low end is typically 0 cases (P10 near zero),
+yet the needed cases still fall inside 91% / 94% of the time. Likely cause:
+zero-sales days in the history (stockouts or days not stocked — this data
+can't tell them apart) teach the P10 model that "almost nothing" is
+possible. Honest but unhelpful. Display fix to be decided with Harry.
