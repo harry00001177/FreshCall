@@ -4,7 +4,7 @@ gets logged when the manager confirms or overrides."""
 
 import pandas as pd
 
-from freshcall.ui_logic import log_records, select_ui_skus, ui_dates, validate_order
+from freshcall.ui_logic import log_records, range_text, select_ui_skus, ui_dates, validate_order, widest_first
 
 
 class TestSelectUiSkus:
@@ -48,3 +48,18 @@ class TestLogRecords:
         recs = log_records("2017-06-13", "case_straddle", rows, submitted_at="2026-09-25T20:00")
         assert [r["outcome"] for r in recs] == ["manager_call", "confirmed", "overridden"]
         assert recs[0]["order_date"] == "2017-06-13" and recs[0]["gate"] == "case_straddle"
+
+
+class TestRangeText:
+    def test_single_value_range_shows_nothing(self):
+        assert range_text(3, 3) == ""
+
+    def test_range_uses_an_en_dash(self):
+        assert range_text(2, 4) == "likely 2–4"
+
+
+class TestWidestFirst:
+    def test_sorts_by_case_width_then_unit_width(self):
+        df = pd.DataFrame({"item_nbr": [1, 2, 3], "lo": [1, 1, 2], "hi": [2, 3, 2],
+                           "p10": [5.0, 5.0, 20.0], "p90": [15.0, 30.0, 22.0]})
+        assert widest_first(df)["item_nbr"].tolist() == [2, 1, 3]

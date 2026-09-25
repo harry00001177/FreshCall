@@ -47,3 +47,17 @@ def log_records(order_date: str, gate: str, rows: list[dict], submitted_at: str)
             "manager_cases": r["manager_cases"], "outcome": outcome,
         })
     return records
+
+
+def range_text(lo: int, hi: int) -> str:
+    """"likely 2–4" beside an order; nothing when P10 and P90 imply the same
+    case count (DECISIONS.md 2026-09-25: a range is information, not an alarm)."""
+    return "" if lo == hi else f"likely {lo}–{hi}"
+
+
+def widest_first(rows: pd.DataFrame) -> pd.DataFrame:
+    """Widest case range first (ties: widest P10–P90 in units) — on stores 44/8
+    the widest quarter held ~45% of wrong orders, so the top of the list is
+    where a manager's glance pays off most."""
+    ranked = rows.assign(_w=rows["hi"] - rows["lo"], _u=rows["p90"] - rows["p10"])
+    return ranked.sort_values(["_w", "_u"], ascending=False).drop(columns=["_w", "_u"])
