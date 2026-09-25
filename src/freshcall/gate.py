@@ -21,6 +21,8 @@ def decide_abstain(p10: float, p50: float, p90: float, cfg: dict) -> bool:
     from freshcall.case_gate import straddles_case_boundary
 
     gate_type = cfg["gate"]["type"]
+    if gate_type == "none":
+        return False
     if gate_type == "case_straddle":
         return straddles_case_boundary(p10, p50, p90, cfg["safety"], cfg["on_hand"], cfg["case_pack"])
     if gate_type == "rel_width":

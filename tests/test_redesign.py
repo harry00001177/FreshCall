@@ -4,7 +4,21 @@ measured in wrong orders and units wasted / short, not just case matches."""
 
 import pandas as pd
 
-from freshcall.redesign import case_range, is_routine, past_max, unit_errors
+from freshcall.redesign import case_range, is_routine, past_max, standing_order, unit_errors
+
+
+class TestStandingOrder:
+    def test_model_policy_uses_the_forecast(self):
+        assert standing_order("model", model_cases=1, last_week_units=0, case_pack=12) == 1
+
+    def test_last_week_policy_uses_last_weeks_sales(self):
+        assert standing_order("last_week", model_cases=1, last_week_units=0, case_pack=12) == 0
+        assert standing_order("last_week", model_cases=0, last_week_units=5, case_pack=12) == 1
+
+    def test_unknown_policy_is_an_error(self):
+        import pytest
+        with pytest.raises(ValueError):
+            standing_order("typo", model_cases=1, last_week_units=0, case_pack=12)
 
 
 class TestIsRoutine:
