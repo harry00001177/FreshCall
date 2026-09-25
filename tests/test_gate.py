@@ -1,7 +1,29 @@
 """The abstain gate is the only thing standing between a confident-looking
 wrong number and a manager who trusts it — every branch gets a test."""
 
-from freshcall.gate import rel_width, should_abstain
+from freshcall.gate import decide_abstain, rel_width, should_abstain
+
+
+def _cfg(gate_type):
+    return {"case_pack": 12, "safety": 0, "on_hand": 0,
+            "gate": {"type": gate_type, "rel_width_threshold": 0.60}}
+
+
+class TestDecideAbstain:
+    def test_case_straddle_config_uses_case_counts(self):
+        # wide interval (rel_width ~0.33) inside one case: case-straddle answers
+        assert decide_abstain(25, 30, 35, _cfg("case_straddle")) is False
+        # narrow interval across 36/37 units: case-straddle abstains
+        assert decide_abstain(35.6, 36.4, 37.0, _cfg("case_straddle")) is True
+
+    def test_rel_width_config_uses_the_threshold(self):
+        assert decide_abstain(50, 86, 140, _cfg("rel_width")) is True
+        assert decide_abstain(35.6, 36.4, 37.0, _cfg("rel_width")) is False
+
+    def test_unknown_gate_type_is_an_error_not_a_silent_default(self):
+        import pytest
+        with pytest.raises(ValueError):
+            decide_abstain(1, 2, 3, _cfg("typo"))
 
 
 class TestRelWidth:

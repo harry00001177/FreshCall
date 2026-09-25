@@ -15,7 +15,7 @@ load_dotenv()
 from freshcall.containment import check_numeral_containment
 from freshcall.explain import build_fact_block, generate_explanation
 from freshcall.features import add_features, build_daily_grid
-from freshcall.gate import rel_width, should_abstain
+from freshcall.gate import decide_abstain, rel_width
 from freshcall.model import fit_quantile_models, predict_quantiles
 from freshcall.order import hindsight_demand_order, recommended_cases
 
@@ -70,8 +70,7 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     )
     p10, p50, p90 = predict_quantiles(models, predict_row[feature_cols])
 
-    threshold = cfg["gate"]["rel_width_threshold"]
-    abstain = should_abstain(p10, p50, p90, threshold)
+    abstain = decide_abstain(p10, p50, p90, cfg)
 
     actual = float(predict_row["unit_sales"].iloc[0])
     recent_avg = round(float(train["unit_sales"].tail(7).mean()), 1)

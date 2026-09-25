@@ -1299,3 +1299,39 @@ predicted. Output `data/backtest_results_leaky.parquet`.
   `derived_density`, `fully_integer_items`), and my own temp download and
   unpack folders outside the repo. Raw Kaggle files, all backtest results
   (including the pre-fix run) and the harness sheets are kept.
+
+---
+
+## 2026-09-25 — UI decisions; system gate switched to case-straddle
+
+**Correction first:** I had described the UI as optional ("the video doesn't
+need a UI"). It isn't: the Problem Statement §5 lists "Interface: Own —
+Streamlit, one page" and §8 lists an explicit confirmation tap as a
+mitigation. The 2026-09-22 decision only *deferred* it until the pipeline
+worked, which it now does.
+
+**Decisions (Harry, grilled 2026-09-25):**
+- **System gate = case-straddle** (`config.yaml` `gate.type`). It is the
+  only gate that beat random on an unseen store under pre-registration;
+  the `rel_width` 0.60 default was an untested opening value, now shown to
+  be ≈ random. The UI gets a sidebar "evaluation view" that can switch to
+  the original `rel_width` gate for the demo, clearly labelled.
+  Implemented as `decide_abstain(p10, p50, p90, cfg)` (unknown gate type
+  raises). The backtest and all experiments are deliberately unchanged, so
+  every logged result still reproduces (checked: `report_backtest.py`
+  identical). `run_slice.py` now uses the system gate.
+- **Shown data:** store 44, test-period dates, 40 SKUs (the persona's
+  nightly order size) drawn with a fixed seed from the candidates that were
+  still selling at the start of the test period — not top-by-volume, which
+  would favour large orders and flatter the screen.
+- **Confirm / override:** every row has an editable case count; ASK ME rows
+  require the manager's own number; one "place order" action writes a local
+  log (date, SKU, system suggestion, manager's number, overridden?) —
+  implements §8's confirmation mitigation; overrides show where the model
+  isn't trusted. Log stays local (gitignored).
+- **Sentences pre-generated** once per shown date into a cache (still
+  through numeral containment + template fallback), not called live: fast,
+  reproducible, cheap, and consistent with "the LLM only words things".
+- **Polish level:** faithful and solid (cases only, no confidence figures,
+  ASK ME with anchor, overrides, phone-width), tested logic, a README
+  screenshot. No deployment for now; revisit after the report and video.
