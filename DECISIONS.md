@@ -937,3 +937,49 @@ known blind spot. Same judge model and prompt as the 17-sentence run
 (reason points the opposite way to the order) is deliberately not in
 this set: the current rubric doesn't ask about it, so a "yes" there
 wouldn't be a judge error — that's follow-up 2.
+
+---
+
+## 2026-09-25 — Negative-control results: the judge catches 5 of 6 flaws, misses overstatement, and its reasons aren't reliable
+
+Ran `run_judge_negative_control.py` once (code commit `a9939b4` before the
+run; 8 real judge calls). Output in `data/l1l2/negative_control.csv`.
+
+| id | flaw | L1 | judge faithful / usable | outcome |
+|---|---|---|---|---|
+| NC1 | invented number | FAIL | no / no | caught |
+| NC2 | wrong direction | pass | no / no | caught |
+| NC3 | confidence talk | pass | no / no | caught |
+| NC4 | order buried, too long | pass | yes / no | caught |
+| NC5 | hand-back that gives a quantity | FAIL | no / no | caught |
+| NC6 | overstated ("significantly", 36.9 vs 39.0) | pass | yes / yes | **MISSED** |
+| PC1, PC2 | clean controls | pass | yes / yes | ok (0 false alarms) |
+
+**Totals:** L1 alone 2/6 (exactly the two predicted by construction);
+judge 5/6; either 5/6; false alarms 0/2.
+
+**Reading (6 items — a probe, not a rate estimate):**
+- **The layers do different jobs.** L1 reliably catches invented numbers
+  and nothing else; 3 of the 5 judge catches (wrong direction, confidence
+  talk, buried order) are flaws L1 cannot see. Neither layer alone would
+  have caught what both together did.
+- **Blind spot: overstated magnitude.** NC6 says "significantly lower"
+  for 36.9 vs 39.0 and passed the judge, even though the judge prompt
+  names "significantly" as a word to check. This matters beyond the probe:
+  the real generator used "significantly" in 4 of the 7 batch-2 sentences
+  (cases 12, 15, 16, 17). Those gaps were large, but nothing in the
+  pipeline would stop it using the word on a small one.
+- **Right verdicts, unreliable reasons.** NC3's reason includes a false
+  objection ("'last week's 51.0' … different time period" — it isn't).
+  NC5's reason calls "harder to call than usual" confidence talk, yet
+  that phrase is the standard abstain template, which the judge passed as
+  usable 3/3 in the 17-sentence run. And once it finds one flaw it tends
+  to answer "no" on both questions (NC1, NC2, NC5), so its per-question
+  verdicts aren't independent. Use it as a screen, not an authority — as
+  the Problem Statement said, "the judge is a component, not ground
+  truth."
+
+**Candidate follow-ups (not done):** fix the blind spot at the source by
+telling the generator to use only "higher / lower / about the same", no
+intensity words — cheaper and more reliable than hoping the judge
+notices; the third rubric question from the case-16 finding.
