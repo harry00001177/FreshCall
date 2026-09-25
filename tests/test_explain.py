@@ -8,7 +8,8 @@ import re
 
 from freshcall.containment import check_numeral_containment
 from freshcall.explain import (
-    build_fact_block, build_fact_block_v2, generate_explanation, render_template_fallback, system_prompt_for,
+    build_fact_block, build_fact_block_v2, build_fact_block_v3, comparison_word, generate_explanation,
+    order_sentence, order_sentence_from, render_template_fallback, system_prompt_for,
 )
 
 
@@ -50,6 +51,33 @@ class TestFactBlockV2:
     def test_v2_blocks_get_the_v2_prompt(self):
         assert "weekday_avg" in system_prompt_for(self._fb())
         assert "recent_avg" in system_prompt_for(build_fact_block("x", False, 3, 30, 28))
+
+
+class TestComparisonWord:
+    def test_within_ten_percent_is_about_the_same(self):
+        assert comparison_word(6.5, 7.0) == "about the same as"   # 7% apart (case 13)
+        assert comparison_word(39.5, 37.0) == "about the same as"  # 6% apart (case 17)
+
+    def test_beyond_ten_percent_says_higher_or_lower(self):
+        assert comparison_word(11, 21) == "lower than"
+        assert comparison_word(7.2, 6.0) == "higher than"
+
+    def test_both_zero_is_about_the_same(self):
+        assert comparison_word(0, 0) == "about the same as"
+
+
+class TestOrderSentenceV3:
+    def test_states_cases_and_units_and_labels_every_reason_number(self):
+        text = order_sentence(cases=4, case_pack=12, weekday="Sunday", weekday_avg=37.5, last_same_weekday=51.0)
+        assert text == "ORDER 4 cases (48 units). Sundays have averaged 37.5 units, lower than last Sunday's 51."
+
+    def test_singular_forms(self):
+        text = order_sentence(cases=1, case_pack=12, weekday="Monday", weekday_avg=1.0, last_same_weekday=1.0)
+        assert text == "ORDER 1 case (12 units). Mondays have averaged 1 unit, about the same as last Monday's 1."
+
+    def test_every_number_is_in_the_fact_block(self):
+        fb = build_fact_block_v3("item 7", 2, 12, "Tuesday", 10.2, 0.0)
+        assert check_numeral_containment(order_sentence_from(fb), fb)
 
 
 class TestRenderTemplateFallback:
