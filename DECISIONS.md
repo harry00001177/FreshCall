@@ -1021,3 +1021,35 @@ relabelling (the property under test is mechanically checkable):
 **Success:** all four hold for 7/7. **If not:** reported as is — the prompt
 isn't iterated again on these same 7 cases (that would be tuning to the
 test).
+
+---
+
+## 2026-09-25 — Comparison-word restriction: pre-registered criterion met (7/7)
+
+Ran `run_comparison_word_check.py` once (prompt change + script committed
+in `93e9fd2` before the run; 7 real gpt-4o-mini calls).
+
+| | old prompt | new prompt |
+|---|---|---|
+| pass all four checks | 3/7 | **7/7** |
+| sentences with intensity words | 4/7 (all "significantly") | **0/7** |
+| L1 on raw output | 7/7 | 7/7 |
+| comparison direction correct | 7/7 | 7/7 |
+
+The only change in the sentences: "significantly" disappeared from cases
+12, 15, 16, 17; cases 11 and 13 came out word-for-word the same; case 14
+now writes "10.0 / 6.0" instead of "10 / 6". End-to-end check afterwards:
+`run_slice.py` (item 502331, split 60) → "ORDER 13 cases. Recent average
+99.9, lower than last week's 161.0." — all Section 8 checks pass.
+
+**Limits, stated plainly:**
+- "about the same as" was never exercised: all 7 cases differ by more
+  than 10%, so whether the model applies that rule correctly is untested.
+- 7 sentences, one run. This shows the instruction is followed on these
+  inputs, not that it always will be. Nothing *enforces* it — a
+  deterministic guard (fallback to the template if an intensity word
+  appears, like the numeral-containment guard) would; not built.
+- It does nothing for the case-16 problem: "ORDER 1 case. Recent average
+  61.6, higher than last week's 21.0." is now calmer but still argues for
+  ordering more. That needs a different fix (fact-block design or the
+  third rubric question).
