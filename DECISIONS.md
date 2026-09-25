@@ -1053,3 +1053,32 @@ now writes "10.0 / 6.0" instead of "10 / 6". End-to-end check afterwards:
   61.6, higher than last week's 21.0." is now calmer but still argues for
   ordering more. That needs a different fix (fact-block design or the
   third rubric question).
+
+---
+
+## 2026-09-25 — Problem Statement v3: method changes written in, plan left as the plan
+
+**What:** `docs/Problem_Statement_FreshCall_v3.docx` (v2 kept untouched).
+Principle agreed with Harry: the Problem Statement is the plan submitted
+to Ajay in September, not a results report. Anything that was a *plan*
+stays as written even where results later disagreed (0.60 opening
+threshold, 15% abstain design target, ≥15% improvement target, abandon
+condition) — the report discusses whether they held. Only places where
+the *method actually used* changed were updated, each with its reason:
+
+1. Metric renamed CPOA → Case Match Rate (CMR); "perfect-hindsight order"
+   → "hindsight demand order", with one sentence on why.
+2. Naive_seasonal scored on the same auto-answered SKU-days as the model
+   (promised to Ajay).
+3. Single 31-day holdout → three rolling-origin folds, reported separately
+   (promised to Ajay).
+4. Sweep: original 0.40–0.70 kept, with a note that it was extended to
+   0.60–1.20 after the first run measured median rel_width ≈ 0.77.
+5. Slice: store 44 / 426 SKUs via the actual filter chain, store 49 as
+   confirmation store, and the discontinued-SKU gap stated.
+6. Order arithmetic: P50 rounded to whole units before the case ceiling;
+   negative quantiles clipped to 0.
+
+Validated against v2 (structure unchanged); a word-level diff confirms
+nothing else changed. Template header ("Milestone 1 / formative") left
+as is.
