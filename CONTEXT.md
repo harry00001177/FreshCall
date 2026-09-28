@@ -2,10 +2,13 @@
 
 Terms only. No implementation details here — see `src/` and `config.yaml`.
 
-- **abstain** — the system's decision to withhold a quantity recommendation
+- **abstain** — *(original design, v1/v2; retired in the redesign, where
+  every SKU gets an order and uncertainty is shown as a range.)* The
+  system's decision to withhold a quantity recommendation
   because its uncertainty is too high, handing the SKU back to a human. This
   is the only term used for this concept in code, logs, and comments.
-- **ASK ME** — the *only* UI-facing rendering of `abstain`. Never write
+- **ASK ME** — *(original design, retired; still shown in the UI's history
+  view.)* The *only* UI-facing rendering of `abstain`. Never write
   "uncertain", "low confidence", "needs review", or any other synonym in
   code or copy — they all mean `abstain` and must say so.
 - `confidence` — **banned word**, everywhere in this codebase (code, comments,
@@ -72,6 +75,9 @@ Terms only. No implementation details here — see `src/` and `config.yaml`.
   order time (e.g. a feature that includes today's sales, or SKUs chosen
   using test-period sales). Checked by *injecting* one on purpose and
   comparing results with and without it.
+- **routine policy** — the store's choice of number for standing orders:
+  the model's (fewer stockouts, more waste) or last week's (the reverse).
+  A business setting priced by the store, not tuned by us.
 - **routine SKU** — on a given day, a SKU whose every day of sales in the
   past 28 fit in one case. Its order is obvious; it is shown as a collapsed
   **standing order** at the model's number rather than asking for attention.

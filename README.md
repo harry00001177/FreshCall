@@ -1,74 +1,71 @@
 # FreshCall
 
-Next-day fresh-food ordering copilot for QSR store managers: forecast
-tomorrow's demand with an interval, turn it into a whole-case order with
-deterministic Python, and **abstain** (hand the SKU back to the manager)
-when the forecast shouldn't be trusted. An LLM only writes the one-line
-explanation, and every number it writes is checked against the facts it
-was given.
+Next-day fresh-food ordering copilot for QSR store managers. For every
+SKU it gives tomorrow's order in whole cases (and units), the **likely
+range** when the forecast is uncertain, and a one-line reason — with the
+uncertain lines listed first, so the manager's attention goes where their
+own knowledge (a promotion, a local event, a delivery problem) matters
+most. Routine SKUs are collapsed as standing orders. Forecasts come from
+quantile regression; every number and word on the manager's screen is
+produced by deterministic Python. An LLM is used where it earned a place:
+as a judge inside the evaluation.
 
 NTU MSc Enterprise AI, PE6201 (Emerging AI Technologies), end-of-course
 project. Glossary: [`CONTEXT.md`](./CONTEXT.md). Every decision, result and
 correction, with the real numbers: [`DECISIONS.md`](./DECISIONS.md).
 
-## Status and findings
+## How the design got here
 
-The full pipeline runs end to end and has been backtested on 2 stores ×
-400+ SKUs × 3 rolling-origin folds (Kaggle Favorita data, a supermarket
-stand-in for QSR data). Headline results, all detailed in `DECISIONS.md`:
+The project started as "size tomorrow's order, **or abstain**" (hand
+uncertain SKUs back to the manager as ASK ME). Evaluated on Kaggle
+Favorita data (a supermarket stand-in for QSR data; 3 stores × 400+ SKUs ×
+3 rolling-origin folds, each design pre-registered before its test):
 
-- **Forecasting layer:** beats a "same day last week" baseline on the same
-  answered SKU-days at every threshold and fold. Relative improvement is
-  +4% to +12% on store 44 in the primary run; excluding 21 SKUs that had
-  stopped selling before the test period, +14.6% (store 44) and +20.0%
-  (store 49) at threshold 1.00 — around the 15% target, store-dependent.
-- **Original abstain gate (interval width, `rel_width`): failed.**
-  Abstention precision is at or below random; replicated on a second,
-  unseen store and with the discontinued SKUs removed.
-- **Pre-registered replacement (abstain when P10/P50/P90 imply different
-  case counts): a real signal** — 1.26x better than random on the unseen
-  confirmation store, all folds (1.24x without discontinued SKUs) — **but
-  not usable as-is**: it abstains on ~74–78% of SKU-days, far past the
-  manager-attention break-even.
-- **Error decomposition:** ~94% of would-be errors are detectable from the
-  interval; the limit is the attention cost of acting on that, not
-  detection.
-- **Explanation layer:** numeral containment passed 14/14 raw LLM
-  sentences; Harry and an independent judge model (Claude Haiku 4.5)
-  agreed on all 17 labelled sentences. A negative-control test showed the
-  judge catches 5 of 6 deliberately flawed sentences but misses overstated
-  comparisons ("significantly" on a tiny gap) — fixed at the source by
-  restricting the generator's comparison words (intensity words 4/7 → 0/7).
-  One real sentence was true in every word yet argued for ordering *more*
-  than the (correct) recommendation — the "true but misleading" risk the
-  Problem Statement predicted, which no check here catches.
-- **Leakage check:** injecting one realistic bug (a 7-day mean that
-  includes the day being predicted) inflates the forecaster's improvement
-  from +11.8% to +20.7% — a fake pass of the 15% target — while interval
-  coverage barely moves; the existing unit test catches it. Hunting for
-  leakage also found SKU selection had used test-period sales for 5 of 426
-  SKUs; dropping them changes nothing material.
-- **Monitors:** bias and coverage monitors (bands fitted on the first
-  fold) stay quiet on the real test windows apart from one day; on a
-  simulated +50% demand shift the bias monitor alerts the next day.
-  Built guardrails: numeral containment with template fallback, the
-  abstain gate, the two monitors. Not built: holiday rule, novelty check,
-  per-order confirmation UI.
+1. **v1 — abstain when the interval is wide (`rel_width`): failed.**
+   Abstention precision at or below random; replicated on an unseen store.
+2. **v2 — abstain when P10/P50/P90 imply different case counts: a real
+   signal, unusable.** 1.26x better than random on an unseen store, but it
+   hands back ~74–78% of SKUs.
+3. **The real-value check changed the question.** Measured as wrong orders
+   and minutes per 40-SKU night, the forecaster alone beats today's
+   practice ("order what sold on the same day last week"), and every
+   abstain gate gives that back — even on the SKUs it hands back, the
+   model is wrong less often than "last week" (39.6% vs 46.5%). Handing a
+   SKU to someone who has no extra information makes it worse.
+4. **Redesign — every SKU gets an order plus its likely range: confirmed**
+   on a third unseen store (store 8, pre-registered, all 3 folds). On the
+   SKUs that need judgement, per 40-SKU night: wrong orders 13.3 → 10.3,
+   units wasted −11%, units short −26%, and far less of the manager's time
+   (faster under all 9 timing assumptions tested). The needed cases fall
+   inside the shown range ~95% of the time; the widest-range quarter holds
+   ~45% of the wrong orders. Trade-off stated, not hidden: on routine,
+   low-volume SKUs the model's standing order wastes more units than "last
+   week" while cutting stockouts — a store setting (`routine_policy`).
+
+Also in `DECISIONS.md`: a deliberate-leak test (one missing `shift(1)`
+would have faked a pass of the 15% target, +11.8% → +20.7%; the unit tests
+catch it), bias/coverage monitors with a positive control, an explanation
+harness (human labels + LLM judge + negative controls) that led from an
+LLM-written sentence to a deterministic one, and every correction of a
+wrong turn along the way.
 
 Evaluation tables for the explanation layer are in
 [`results/explanation_harness/`](./results/explanation_harness/) (7–17
 rows each, with a few derived numbers from the Kaggle data per row).
 
-Scope limit: the dataset has no inventory field, so this validates demand
-estimation, uncertainty and abstention (Layer A), not inventory-aware
-ordering (Layer B). `case_pack=12` is an assumption; see `config.yaml`.
+**Scope limits:** no inventory field, so this validates demand
+estimation, uncertainty and the ordering display (Layer A), not
+inventory-aware ordering (Layer B) — which also means waste is overstated
+for both policies on low-volume SKUs. `case_pack=12` and all manager
+timings are assumptions (`config.yaml`). What a manager knows that the
+model doesn't is unmeasurable in this data.
 
 ## Layout
 
 ```text
 src/freshcall/   the system: order, gate, case_gate, features, model,
                  explain, containment, monitors, backtest, decomposition,
-                 harness, judge, ui_logic
+                 harness, judge, redesign, ui_logic
 tests/           pytest suite for every module above
 prepare_data.py  raw Kaggle CSVs -> derived files the pipeline reads
 make_demo_data.py  synthetic demo series (demo/), no Kaggle data needed
@@ -88,6 +85,10 @@ experiments/     every evaluation in DECISIONS.md, one script each:
   run_judge.py                    L2 judge vs human labels
   run_judge_negative_control.py   does the judge catch flawed sentences?
   run_comparison_word_check.py    generator prompt change, before vs after
+  run_redesign.py                 the redesign vs today (store 8 confirmation)
+  run_time_sensitivity.py         manager minutes under 9 timing assumptions
+  run_explanation_v2.py           same-weekday fact block, 3-question labels
+  run_explanation_v3.py           deterministic sentence vs the LLM one
 config.yaml      all assumptions (case_pack, safety, gate threshold...)
 results/         evaluation tables committed for review
 docs/            problem statement (v2 as submitted, v3 current),
@@ -109,22 +110,21 @@ result.
 ## Manager UI
 
 ```bash
-PYTHONPATH=src python build_ui_cache.py   # once; needs the Kaggle data and an OpenRouter key
+PYTHONPATH=src python build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
 ```
 
-One page, phone-width friendly: tomorrow's order for 40 SKUs at store 44,
-in cases. SKUs the gate hands back are listed first as **ASK ME**, with
-last week's sales on the same day as a reference; the rest show the
-suggested order and a one-line reason. Every line is editable, ASK ME
-lines need the manager's own number, and **Place order** logs what was
-confirmed, changed or set by the manager (`data/ui_orders_log.csv`). No
-confidence figure appears anywhere. The sidebar's *evaluation view* (for
-demos, not managers) switches between the system gate (case-straddle) and
-the original `rel_width` design, and can show what actually sold.
-Everything shown is pre-generated by `build_ui_cache.py` from the stored
-backtest (40 SKUs drawn with a fixed seed, one date every 14 days of the
-test period); the page itself calls no model and no LLM.
+One page, phone-width friendly: tomorrow's order for 40 SKUs at store 44.
+Each line reads "ORDER 3 cases (36 units) · likely 2–4" with a one-line
+reason ("Tuesdays have averaged 30 units, about the same as last
+Tuesday's 28"); ranges wider than 4 cases are shown in words instead.
+Lines are listed widest range first; routine SKUs sit in a collapsed
+"standing orders" section. Every line is editable, and **Place order**
+logs what was confirmed or changed (`data/ui_orders_log.csv`). No
+confidence figure appears anywhere, and the page calls no model and no
+LLM. The sidebar's *evaluation view* (for demos, not managers) switches to
+the earlier ASK ME designs (v1, v2) for comparison and can show what
+actually sold.
 
 ## Setup
 
@@ -132,15 +132,13 @@ test period); the page itself calls no model and no LLM.
 pip install -r requirements.txt
 ```
 
-The explanation step calls `openai/gpt-4o-mini` via OpenRouter. Put the key
-in a `.env` file (gitignored):
+The manager-facing path needs no API key. The evaluation scripts that use
+an LLM (the judge, and the earlier LLM-written sentences they compare
+against) call OpenRouter; put the key in a `.env` file (gitignored):
 
 ```text
 OPENROUTER_API_KEY=sk-or-...
 ```
-
-Without a key the pipeline still runs: the explanation falls back to a
-deterministic template.
 
 ## Data
 
