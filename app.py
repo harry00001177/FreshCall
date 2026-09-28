@@ -71,7 +71,7 @@ def outcome_note(row, cases=None) -> str:
 def order_lines(row, cases: int, with_range: bool) -> tuple[str, str]:
     sentence = order_sentence(cases, cp, row.weekday, row.weekday_avg, row.last_week_units)
     head, _, reason = sentence.partition(". ")
-    rng = range_text(row.lo, row.hi) if with_range else ""
+    rng = range_text(row.lo, row.hi, cfg["range_display_max_width"]) if with_range else ""
     return f"**{head}**" + (f" · {rng}" if rng else ""), reason
 
 

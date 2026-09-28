@@ -57,6 +57,11 @@ class TestRangeText:
     def test_range_uses_an_en_dash(self):
         assert range_text(2, 4) == "likely 2–4"
 
+    def test_a_range_too_wide_to_act_on_becomes_words(self):
+        # 1–21 cases helps nobody; say what to do instead (DECISIONS.md 2026-09-28)
+        assert range_text(1, 21, max_width=4) == "harder to call than usual — worth a look at stock and tomorrow's plans"
+        assert range_text(1, 5, max_width=4) == "likely 1–5"
+
 
 class TestWidestFirst:
     def test_sorts_by_case_width_then_unit_width(self):

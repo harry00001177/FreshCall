@@ -49,10 +49,17 @@ def log_records(order_date: str, gate: str, rows: list[dict], submitted_at: str)
     return records
 
 
-def range_text(lo: int, hi: int) -> str:
+WIDE_RANGE_TEXT = "harder to call than usual — worth a look at stock and tomorrow's plans"
+
+
+def range_text(lo: int, hi: int, max_width: int = 4) -> str:
     """"likely 2–4" beside an order; nothing when P10 and P90 imply the same
-    case count (DECISIONS.md 2026-09-25: a range is information, not an alarm)."""
-    return "" if lo == hi else f"likely {lo}–{hi}"
+    case count (a range is information, not an alarm). A range wider than
+    `max_width` cases (e.g. 1–21) helps nobody, so it becomes words instead
+    of numbers (DECISIONS.md 2026-09-28)."""
+    if lo == hi:
+        return ""
+    return f"likely {lo}–{hi}" if hi - lo <= max_width else WIDE_RANGE_TEXT
 
 
 def widest_first(rows: pd.DataFrame) -> pd.DataFrame:

@@ -13,6 +13,10 @@ on_hand: 0              # Not an assumption — Favorita has no inventory field,
 # BUSINESS SETTING for each store, not a tuned value (DECISIONS.md 2026-09-25).
 routine_policy: model         # model | last_week
 
+# The UI shows "likely lo–hi" only when the range is narrow enough to act on;
+# wider ranges (1.4–5.6% of order lines on stores 44/8) are shown in words.
+range_display_max_width: 4    # cases
+
 gate:
   # none = the redesign: every SKU gets an order and a likely range (confirmed
   # on store 8, DECISIONS.md 2026-09-25). case_straddle (v2) and rel_width (v1)

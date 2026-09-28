@@ -1751,3 +1751,22 @@ yet the needed cases still fall inside 91% / 94% of the time. Likely cause:
 zero-sales days in the history (stockouts or days not stocked — this data
 can't tell them apart) teach the P10 model that "almost nothing" is
 possible. Honest but unhelpful. Display fix to be decided with Harry.
+
+---
+
+## 2026-09-28 — Very wide ranges shown in words, not numbers
+
+**Decision (Harry):** a range wider than 4 cases (`range_display_max_width`
+in `config.yaml`) is shown as "harder to call than usual — worth a look at
+stock and tomorrow's plans" instead of numbers like "likely 1–21"; it
+still sorts to the top. Display only — orders and every evaluation number
+are unchanged. Rejected for now: retraining without suspected
+stockout / not-stocked zero days (the likely cause of P10 collapsing to
+~0) — this data can't tell those days from genuine zero demand, so
+dropping them by guesswork could bias every forecast upward, and without
+inventory data there's no way to check. Listed as the fix to make once
+real on-hand data exists.
+
+Checked in the browser (store 44, 16 May): the two lines that read
+"likely 1–21" / "likely 0–18" now show the words; the other lines still
+show "likely 1–5", "likely 2–4", etc. 123/123 tests.
