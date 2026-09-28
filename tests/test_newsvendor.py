@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from freshcall.model import fit_quantile_models, predict_all_quantiles
-from freshcall.newsvendor import critical_quantile, nearest_quantile, order_cost
+from freshcall.newsvendor import critical_quantile, floor_applies, nearest_quantile, newsvendor_cases, order_cost
 
 GRID = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
@@ -92,3 +92,44 @@ class TestEvaluateSkuFoldQuantiles:
         r = rows[0]
         assert [r[f"q{q}"] for q in GRID] == sorted(r[f"q{q}"] for q in GRID)
         assert r["hindsight"] == math.ceil(r["actual"] / 12)
+
+
+class TestNewsvendorCases:
+    """Amended pre-registration (DECISIONS.md 2026-09-28): the 9 quantile
+    forecasts are 9 equally likely demands; order the whole case count
+    with the lowest average cost."""
+
+    def test_small_demand_is_not_worth_a_case_when_waste_costs_the_same(self):
+        # every scenario ~3 units: 1 case wastes ~9, 0 cases misses ~3
+        assert newsvendor_cases([3.0] * 9, ratio=1, case_pack=12) == 0
+
+    def test_same_demand_is_worth_a_case_when_shortage_costs_more(self):
+        # at ratio 4 missing 3 units costs 12 > wasting 9
+        assert newsvendor_cases([3.0] * 9, ratio=4, case_pack=12) == 1
+
+    def test_can_round_down_below_the_forecast(self):
+        # median 13 units: rounding up (2 cases) wastes ~11, 1 case misses ~1
+        assert newsvendor_cases([13.0] * 9, ratio=1, case_pack=12) == 1
+
+    def test_ties_go_to_fewer_cases(self):
+        # 6 units: 0 cases misses 6, 1 case wastes 6 -- equal at ratio 1
+        assert newsvendor_cases([6.0] * 9, ratio=1, case_pack=12) == 0
+
+    def test_spread_of_scenarios_matters_not_just_the_middle(self):
+        low = [10.0] * 5 + [30.0] * 4
+        # higher ratio -> willing to cover the 30-unit scenarios
+        assert newsvendor_cases(low, ratio=9, case_pack=12) > newsvendor_cases(low, ratio=0.25, case_pack=12)
+
+    def test_zero_demand_orders_nothing(self):
+        assert newsvendor_cases([0.0] * 9, ratio=9, case_pack=12) == 0
+
+
+class TestFloor:
+    def test_sold_every_one_of_the_last_7_days(self):
+        assert floor_applies([1, 2, 5, 1, 1, 3, 1]) is True
+
+    def test_one_zero_day_means_no_floor(self):
+        assert floor_applies([1, 2, 0, 1, 1, 3, 1]) is False
+
+    def test_needs_a_full_week_of_history(self):
+        assert floor_applies([1, 2, 3]) is False
