@@ -8,7 +8,7 @@ import pandas as pd
 
 from freshcall.features import add_features, build_daily_grid
 from freshcall.gate import should_abstain
-from freshcall.model import fit_quantile_models, predict_quantiles
+from freshcall.model import fit_quantile_models, predict_all_quantiles, predict_quantiles
 from freshcall.order import hindsight_demand_order, naive_seasonal_order, recommended_cases
 
 FOLDS = [
@@ -20,15 +20,13 @@ FOLDS = [
 FEATURE_COLS_STATIC = ["lag_1", "lag_7", "rolling_7_mean"]
 
 
-def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, cfg: dict,
-                      features_fn=add_features) -> list[dict]:
-    """Fit once on data up to fold['train_end'], predict every day in
-    [test_start, test_end]. Returns one dict per test day, or [] if there
+def _sku_fold_frames(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, features_fn):
+    """(train, test, feature_cols) for one SKU and fold, or None if there
     isn't enough training history for this SKU to reach this fold."""
     sku = raw_df[(raw_df["store_nbr"] == store_nbr) & (raw_df["item_nbr"] == item_nbr)][["date", "unit_sales"]]
     sku = sku.sort_values("date")
     if sku.empty:
-        return []
+        return None
 
     grid = build_daily_grid(sku, start=sku["date"].min(), end=fold["test_end"])
     feats = features_fn(grid)
@@ -40,16 +38,31 @@ def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold:
     test = test.dropna(subset=feature_cols)
 
     if len(train) < 30 or test.empty:
-        return []  # not enough history for this SKU to evaluate this fold
+        return None
+    return train, test, feature_cols
 
-    models = fit_quantile_models(
+
+def _fit(train: pd.DataFrame, feature_cols: list[str], quantiles, cfg: dict) -> dict:
+    return fit_quantile_models(
         train[feature_cols], train["unit_sales"],
-        quantiles=cfg["model"]["quantiles"],
+        quantiles=quantiles,
         n_estimators=cfg["model"]["n_estimators"],
         max_depth=cfg["model"]["max_depth"],
         learning_rate=cfg["model"]["learning_rate"],
         random_state=cfg["model"]["random_state"],
     )
+
+
+def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, cfg: dict,
+                      features_fn=add_features) -> list[dict]:
+    """Fit once on data up to fold['train_end'], predict every day in
+    [test_start, test_end]. Returns one dict per test day, or [] if there
+    isn't enough training history for this SKU to reach this fold."""
+    frames = _sku_fold_frames(raw_df, store_nbr, item_nbr, fold, features_fn)
+    if frames is None:
+        return []  # not enough history for this SKU to evaluate this fold
+    train, test, feature_cols = frames
+    models = _fit(train, feature_cols, cfg["model"]["quantiles"], cfg)
 
     case_pack, safety, on_hand = cfg["case_pack"], cfg["safety"], cfg["on_hand"]
     threshold = cfg["gate"]["rel_width_threshold"]
@@ -69,6 +82,32 @@ def evaluate_sku_fold(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold:
         })
     return results
 
+
+def evaluate_sku_fold_quantiles(raw_df: pd.DataFrame, store_nbr: int, item_nbr: int, fold: dict, cfg: dict,
+                                quantiles: list[float]) -> list[dict]:
+    """The newsvendor backtest (DECISIONS.md 2026-09-28): same data, features
+    and hyperparameters as evaluate_sku_fold, but one model per quantile in
+    `quantiles`. Stores every quantile's prediction (columns "q0.1", ...)
+    so any cost ratio can be scored later without refitting."""
+    frames = _sku_fold_frames(raw_df, store_nbr, item_nbr, fold, add_features)
+    if frames is None:
+        return []
+    train, test, feature_cols = frames
+    models = _fit(train, feature_cols, quantiles, cfg)
+    case_pack = cfg["case_pack"]
+
+    results = []
+    for _, row in test.iterrows():
+        preds = predict_all_quantiles(models, row[feature_cols].to_frame().T)
+        actual = float(row["unit_sales"])
+        results.append({
+            "item_nbr": item_nbr, "fold": fold["name"], "date": row["date"], "actual": actual,
+            "hindsight": hindsight_demand_order(actual, case_pack),
+            "naive": naive_seasonal_order(row["lag_7"], case_pack),
+            "last_week_units": row["lag_7"],
+            **{f"q{q}": v for q, v in preds.items()},
+        })
+    return results
 
 def summarize_fold(rows: list[dict]) -> dict:
     """model_cmr and naive_cmr are BOTH computed on the auto-answered

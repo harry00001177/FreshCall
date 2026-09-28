@@ -47,6 +47,7 @@ log every substantive step, including failed attempts.
 39. 2026-09-25 — UI rebuilt for the redesign; very wide ranges found
 40. 2026-09-28 — Very wide ranges shown in words, not numbers
 41. 2026-09-28 — PRE-REGISTRATION: newsvendor ordering (order at the cost-ratio quantile)
+42. 2026-09-28 — Newsvendor, development stores (44, 8): the pre-registered rule loses at high ratios; cause found
 
 ---
 
@@ -1850,3 +1851,47 @@ result goes in the report as a finding.
 *Measured so far (run):* fitting on 5 SKUs × 3 folds took 3.1 s with 3
 quantiles; a full store is expected (not run) to take roughly 10–20 min
 with 9.
+
+---
+
+## 2026-09-28 — Newsvendor, development stores (44, 8): the pre-registered rule loses at high ratios; cause found
+
+`experiments/run_newsvendor.py` — 9-quantile backtests of stores 44 and 8
+(7 min 22 s together, run). **Store 45 not run.** Cost per 40-SKU night
+(waste unit = 1), all SKUs:
+
+| ratio | 44 P50 | 44 pre-registered | 8 P50 | 8 pre-registered | pre-reg rule vs P50 |
+|---|---|---|---|---|---|
+| 0.25 | 284.8 | 204.8 | 266.6 | 204.7 | pass, pass |
+| 0.5 | 297.2 | 242.2 | 271.5 | 243.7 | pass, pass |
+| 2 | 371.5 | 428.8 | 300.7 | 330.3 | **FAIL, FAIL** (0/3 folds) |
+| 4 | 470.5 | 526.6 | 339.7 | 379.3 | **FAIL, FAIL** (0/3 folds) |
+| 9 | 718.2 | 684.7 | 437.2 | 468.3 | pass, **FAIL** |
+
+Calibration (share of days with actual ≤ prediction), store 44 / 8:
+q0.1 18%/20%, q0.5 58%/58%, q0.8 84%/83%, q0.9 92%/91% — the middle
+quantiles run high by ~8 points, the top ones are close.
+
+**Cause (my error in the pre-registration):** "round up to whole cases"
+is not neutral. The P50 order already covers actual demand on 84.7% (44)
+/ 91.1% (8) of SKU-days, because rounding up adds ~5–6 units beyond the
+forecast on average — so the current "P50" order is really a high-service
+order. Rounding the P80 forecast up again pushes further past the point
+where one more case pays. The newsvendor rule "order at quantile q*" holds
+for demand in continuous units; with 12-unit cases the cheapest order is
+whichever whole number of cases has the lowest *expected* cost, which can
+be the case count below the forecast, not always above.
+
+**Dev-only check of that fix (not pre-registered, not a result):** treat
+the 9 quantile forecasts as 9 equally likely demands and pick the case
+count with the lowest average cost. Cost per 40-SKU night vs the P50
+order, store 44: 112.5 vs 284.8 (r 0.25), 244.9 vs 321.9 (r 1), 455.2 vs
+470.5 (r 4), 594.5 vs 718.2 (r 9); store 8: 67.2 vs 266.6, 180.2 vs
+281.3, 327.0 vs 339.7, 403.1 vs 437.2. Lower at every ratio on both
+stores — including r = 1, i.e. the current system's orders are costlier
+than they need to be even when both errors cost the same. Low-ratio
+savings come largely from ordering fewer (often zero) cases on slow SKUs,
+which a real store may not accept (a missing item can cost more than its
+own margin) — to be discussed.
+
+Decision on how to proceed: pending (Harry).

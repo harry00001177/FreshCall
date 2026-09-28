@@ -29,6 +29,14 @@ def predict_quantiles(models: dict, X) -> tuple[float, float, float]:
     return tuple(max(0.0, float(p)) for p in enforce_non_crossing(p10, p50, p90))
 
 
+def predict_all_quantiles(models: dict, X) -> dict[float, float]:
+    """Every trained quantile at once (the newsvendor grid, DECISIONS.md
+    2026-09-28): sorted so they never cross, clipped at 0, keyed by quantile."""
+    qs = sorted(models.keys())
+    values = sorted(float(models[q].predict(X)[0]) for q in qs)
+    return {q: max(0.0, v) for q, v in zip(qs, values)}
+
+
 def enforce_non_crossing(p10: float, p50: float, p90: float) -> tuple[float, float, float]:
     """Sort the three predictions so P10 <= P50 <= P90 always holds, even
     though each came from an independently-trained model."""
