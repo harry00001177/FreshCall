@@ -34,6 +34,19 @@ log every substantive step, including failed attempts.
 26. 2026-09-25 — Monitor and look-ahead results; demo data added
 27. 2026-09-25 — Leak test result: one missing shift(1) would have faked a "target met"
 28. 2026-09-25 — Repo tidy: experiments/ folder, index, local cleanup
+29. 2026-09-25 — UI decisions; system gate switched to case-straddle
+30. 2026-09-25 — Manager UI built and tested in the browser
+31. 2026-09-25 — Re-examining "real-world value": the gate, as designed, removes the value the model creates
+32. 2026-09-25 — Redesign decisions, and PRE-REGISTRATION of the redesign test
+33. 2026-09-25 — Redesign results: confirmed on store 8 (pre-registered SUCCESS)
+34. 2026-09-25 — Decisions after the redesign result; PRE-REGISTRATION of the explanation fix
+35. 2026-09-25 — Manager-time sensitivity table
+36. 2026-09-25 — Explanation fix, batch 3 results: pre-registered SUCCESS; two new problems found
+37. 2026-09-25 — Decision: the order line becomes a deterministic template; PRE-REGISTRATION
+38. 2026-09-25 — Template sentence results: pre-registered SUCCESS; the judge is unreliable on "direction"
+39. 2026-09-25 — UI rebuilt for the redesign; very wide ranges found
+40. 2026-09-28 — Very wide ranges shown in words, not numbers
+41. 2026-09-28 — PRE-REGISTRATION: newsvendor ordering (order at the cost-ratio quantile)
 
 ---
 
@@ -1770,3 +1783,70 @@ real on-hand data exists.
 Checked in the browser (store 44, 16 May): the two lines that read
 "likely 1–21" / "likely 0–18" now show the words; the other lines still
 show "likely 1–5", "likely 2–4", etc. 123/123 tests.
+
+---
+
+## 2026-09-28 — PRE-REGISTRATION: newsvendor ordering (order at the cost-ratio quantile)
+
+**Decision (Harry):** do the extension inside the course submission, full
+version (tested + wired into the UI), not after it.
+
+**Idea:** today every order is cut at P50, which is only the cheapest
+choice if one unit short costs the same as one unit wasted. With a store's
+**cost ratio** r = (cost of one unit short) / (cost of one unit wasted),
+the cheapest single-day order is at quantile q* = r / (1 + r) (the
+newsvendor critical ratio). The prototype's on_hand = 0 assumption (every
+day starts from zero, leftovers don't carry over) is exactly the
+newsvendor's single-period setting.
+
+**Design decisions (Harry, 2026-09-28):**
+- Q1: train 9 quantile models (0.1, 0.2, …, 0.9) per SKU-fold, same
+  hyperparameters, sorted so they never cross. Rejected: interpolating
+  from P10/P50/P90 (an estimate of an estimate, and can't be checked for
+  calibration); residual-based quantiles (a new concept for little gain).
+- Q2: one rule for every SKU — routine SKUs also order at q*, so
+  `routine_policy` is replaced by the cost ratio *if* this passes. Routine
+  SKUs stay collapsed in the UI.
+- Q3: cost ratios scanned: 0.25, 0.5, 1, 2, 4, 9. q* = 0.20, 0.33, 0.50,
+  0.67, 0.80, 0.90 → the nearest trained quantile is used: 0.2, 0.3, 0.5,
+  0.7, 0.8, 0.9. No real cost data exists; these are scenarios, not
+  estimates.
+- Q5: the cost ratio is a store-level setting (config), not a nightly
+  manager input. The UI's evaluation view gets a slider for the demo.
+
+**PRE-REGISTERED — committed before any 9-quantile code or result exists:**
+
+*Order:* `recommended_cases(Q_q)` with the existing rounding (units
+rounded half-up, then up to whole cases). **P50 policy** = the 0.5 column
+of the same 9-model run; **last week** = same weekday last week (naive).
+
+*Cost per 40-SKU night* (waste unit cost = 1): r × units short + units
+over, all SKUs (routine included); also reported separately for routine
+and non-routine.
+
+*Data:* development = store 44 (and store 8, already seen). Confirmation =
+**store 45** (Quito, type A), chosen by the same rule as store 8 before
+any of its results exist: most SKUs meeting the density ≥ 0.7 and
+first-sale ≤ 2015-06-01 filters, excluding 44, 49 and 8 (store 45: 428
+SKUs). Same 3 folds, run once, its own output file.
+
+*Success (store 45):* for **every** cost ratio ≠ 1 (0.25, 0.5, 2, 4, 9),
+the newsvendor order has lower cost than the P50 order, pooled AND in at
+least 2 of 3 folds. If some ratios pass and others don't, it is reported
+as PARTIAL with the ratios named — not rounded up to a success.
+
+*Also reported, no pass/fail:* cost vs last week at each ratio;
+calibration — for each trained quantile q, the share of SKU-days with
+actual ≤ Q_q (a perfectly calibrated P80 is ~80%; the P10–P90 interval
+already covered only ~73% vs 80% nominal, so under-coverage is expected
+and would make high ratios under-order).
+
+*No second try:* store 45 is not re-run with any quantile grid, ratio,
+rounding or hyperparameter changed. Whatever it shows is reported.
+
+*If it fails:* `routine_policy` and the P50 order stay as they are; the
+result goes in the report as a finding.
+
+*Measured so far (run):* fitting on 5 SKUs × 3 folds took 3.1 s with 3
+quantiles; a full store is expected (not run) to take roughly 10–20 min
+with 9.
