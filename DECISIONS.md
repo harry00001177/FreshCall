@@ -52,6 +52,7 @@ log every substantive step, including failed attempts.
 44. 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
 45. 2026-09-28 — Newsvendor order wired into the system and UI; routine_policy removed
 46. 2026-09-28 — Consistency pass after the newsvendor change
+47. 2026-09-28 — HANDOFF and project overview rewritten for the final design
 
 ---
 
@@ -2035,3 +2036,18 @@ newsvendor order makes it more frequent.
 - Re-verified: 152/152 tests; `run_redesign.py` still reports SUCCESS
   (store 8); `run_newsvendor.py evaluate 45` reproduces SUCCESS and
   `backtest 45` refuses a second run; the UI loads in all three views.
+
+---
+
+## 2026-09-28 — HANDOFF and project overview rewritten for the final design
+
+**Decision (Harry):** update both, not leave them as historical records.
+`docs/HANDOFF.md` now describes the current state (working rules, design
+history table, architecture, data, order rule and settings, guardrails
+built vs not built, open items, how to run); the Milestone-1 version is
+kept in git history (`git show b725999:docs/HANDOFF.md`).
+`docs/PROJECT_OVERVIEW.md` (Harry's Chinese study guide): sections 1–6 and
+8–9 rewritten from the abstain design to the order + range + newsvendor
+design; section 7 (progress) kept. Written only from logged numbers;
+planned-but-never-built items (novelty check, calendar rule, earthquake
+probe, n8n low-code trial, deployment) are stated as not built.
