@@ -62,6 +62,18 @@ def range_text(lo: int, hi: int, max_width: int = 4) -> str:
     return f"likely {lo}–{hi}" if hi - lo <= max_width else WIDE_RANGE_TEXT
 
 
+def range_bar(lo: int, order: int, hi: int, max_width: int = 4) -> dict | None:
+    """Where to draw the compact row's range bar, in % of its width: the
+    band is the likely range, the dot the order. Scale 0 .. max(hi, order)
+    + 1 cases so neither touches the right edge. None when the range is too
+    wide to act on (shown in words instead, as in `range_text`)."""
+    if hi - lo > max_width:
+        return None
+    scale = max(hi, order) + 1
+    return {"lo_pct": lo / scale * 100, "hi_pct": hi / scale * 100,
+            "order_pct": order / scale * 100, "label": "" if lo == hi else f"{lo}–{hi}"}
+
+
 def shown_range(lo: int, order: int, hi: int) -> tuple[int, int]:
     """The P10/P90 case range, stretched to include the order: the
     newsvendor order can round below the cases P10 implies (DECISIONS.md

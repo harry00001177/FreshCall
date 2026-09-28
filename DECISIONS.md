@@ -55,6 +55,7 @@ log every substantive step, including failed attempts.
 47. 2026-09-28 — HANDOFF and project overview rewritten for the final design
 48. 2026-09-28 — Submission check: repo compliance, AI-assistance statement
 49. 2026-09-28 — Working notes moved out of the repo; history cleaned
+50. 2026-09-28 — UI: slim expandable rows
 
 ---
 
@@ -2085,3 +2086,26 @@ The git history is rewritten to drop both files from every commit and
 redact two personal lines in this log — commit order and dates are kept,
 so every pre-registration still visibly precedes its result. Commit hashes
 changed; the hashes cited in this log are updated to the new ones.
+
+---
+
+## 2026-09-28 — UI: slim expandable rows
+
+**Decisions (Harry):** (1) item names — Favorita's `items.csv` has only
+number, category (family) and class code, so real names don't exist;
+the backtest UI keeps "category + number" (with a colour-coded category
+tag) rather than invented names; the future public demo on synthetic data
+may use QSR-style names, since that data is synthetic anyway. (2) Built
+with native Streamlit + CSS, not a custom front-end component (closer
+to the mock-up would cost more time and risk before the deadline).
+
+**Built:** one slim row per SKU — category tag + item number, a range bar
+(band = likely range in cases, dot = the order; `ui_logic.range_bar`,
+tested) or "Wide range — take a look", and an editable case count; a
+"Details" drawer under each row holds the order sentence, the 4-week
+same-weekday average, last week's number and units per case (and the
+backtest outcome in the evaluation view). Standing orders stay one
+collapsed block, one line each with last week's and the 4-week average
+(Streamlit can't nest a drawer inside it). Checked in the browser at
+laptop width (steppers visible), narrow pane and phone width (rows stack;
+table header hidden), drawer open/close, and Place order (40 confirmed).

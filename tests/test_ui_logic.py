@@ -3,9 +3,10 @@ which SKUs and dates are shown, what counts as a valid order, and what
 gets logged when the manager confirms or overrides."""
 
 import pandas as pd
+import pytest
 
-from freshcall.ui_logic import (log_records, range_text, select_ui_skus, shown_range, ui_dates, validate_order,
-                                widest_first)
+from freshcall.ui_logic import (log_records, range_bar, range_text, select_ui_skus, shown_range, ui_dates,
+                                validate_order, widest_first)
 
 
 class TestSelectUiSkus:
@@ -83,3 +84,23 @@ class TestShownRange:
 
     def test_order_above_the_range_extends_it_up(self):
         assert shown_range(lo=1, order=4, hi=3) == (1, 4)
+
+
+class TestRangeBar:
+    """Positions (in % of the bar) for the compact row's range bar: the band
+    is the likely range, the dot is the order."""
+
+    def test_band_and_dot_positions(self):
+        # scale runs 0 .. max(hi, order) + 1 = 6 cases
+        bar = range_bar(lo=1, order=3, hi=5, max_width=4)
+        assert bar["label"] == "1–5"
+        assert (bar["lo_pct"], bar["hi_pct"], bar["order_pct"]) == pytest.approx((100 / 6, 500 / 6, 50.0))
+
+    def test_single_value_range_has_no_label(self):
+        assert range_bar(lo=2, order=2, hi=2, max_width=4)["label"] == ""
+
+    def test_too_wide_to_act_on_gives_no_bar(self):
+        assert range_bar(lo=1, order=18, hi=21, max_width=4) is None
+
+    def test_zero_order_sits_at_the_left_edge(self):
+        assert range_bar(lo=0, order=0, hi=1, max_width=4)["order_pct"] == 0.0

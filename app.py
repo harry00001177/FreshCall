@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "src"))  # `streamlit run` doesn't take PYTHONPATH
 
 from freshcall.explain import build_fact_block, order_sentence, render_template_fallback  # noqa: E402
 from freshcall.newsvendor import QUANTILES, system_order  # noqa: E402
-from freshcall.ui_logic import log_records, range_text, shown_range, validate_order, widest_first  # noqa: E402
+from freshcall.ui_logic import log_records, range_bar, range_text, shown_range, validate_order, widest_first  # noqa: E402
 
 CACHE = ROOT / "data/ui_cache.parquet"
 LOG = ROOT / "data/ui_orders_log.csv"
@@ -80,6 +80,69 @@ def order_lines(row, cases: int, with_range: bool) -> tuple[str, str]:
     return f"**{head}**" + (f" · {rng}" if rng else ""), reason
 
 
+FAMILY_HUE = {"PRODUCE": "99,153,34", "DAIRY": "55,138,221", "BREAD/BAKERY": "186,117,23",
+              "EGGS": "186,117,23", "DELI": "212,83,126", "MEATS": "216,90,48", "POULTRY": "216,90,48",
+              "PREPARED FOODS": "127,119,221", "SEAFOOD": "29,158,117"}
+ROW_CSS = """<style>
+div[data-testid="stForm"] div[data-testid="stVerticalBlock"] {gap: 0.15rem;}
+.fc-head {display:flex; gap:1rem; font-size:12px; opacity:.6; padding:0 2px 4px; margin-bottom:6px; border-bottom:1px solid rgba(128,128,128,.35);}
+.fc-item {font-size:14px; line-height:2.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.fc-chip {font-size:11px; padding:2px 7px; border-radius:6px; margin-right:8px;}
+.fc-bar {position:relative; height:6px; border-radius:3px; background:rgba(128,128,128,.18); margin-top:.9rem;}
+.fc-band {position:absolute; top:0; height:6px; border-radius:3px; background:rgba(128,128,128,.55);}
+.fc-dot {position:absolute; top:-3px; width:12px; height:12px; border-radius:50%; background:currentColor;}
+.fc-lbl {font-size:11px; opacity:.6; margin-top:2px;}
+.fc-wide {font-size:12px; color:#BA7517; line-height:2.4rem;}
+div[data-testid="stForm"] details {border:none; margin-top:-0.4rem;}
+div[data-testid="stForm"] details summary {padding:0 2px; font-size:12px; opacity:.7; min-height:1.2rem;}
+div[data-testid="stForm"] details summary p {font-size:12px;}
+div[data-testid="stForm"] details:has(.fc-standing) {border:1px solid rgba(128,128,128,.35); margin-top:.6rem;}
+div[data-testid="stForm"] details:has(.fc-standing) > summary {font-size:14px; opacity:1; padding:.5rem .75rem;}
+div[data-testid="stForm"] details:has(.fc-standing) > summary p {font-size:14px;}
+@media (max-width: 640px) {.fc-head {display:none;}}
+</style>"""
+
+
+def chip(family: str) -> str:
+    rgb = FAMILY_HUE.get(family, "128,128,128")
+    return (f'<span class="fc-chip" style="background:rgba({rgb},.16);color:rgb({rgb})">'
+            f'{family.title()}</span>')
+
+
+def bar_html(row) -> str:
+    bar = range_bar(row.lo, row.shown, row.hi, cfg["range_display_max_width"])
+    if bar is None:
+        return '<div class="fc-wide">Wide range — take a look</div>'
+    band = f'left:{bar["lo_pct"]:.1f}%;width:{bar["hi_pct"] - bar["lo_pct"]:.1f}%'
+    return (f'<div class="fc-bar"><div class="fc-band" style="{band}"></div>'
+            f'<div class="fc-dot" style="left:calc({bar["order_pct"]:.1f}% - 6px)"></div></div>'
+            f'<div class="fc-lbl">{bar["label"] and "likely " + bar["label"]}</div>')
+
+
+def compact_row(row, cases: int, key: str, with_range: bool = True) -> dict:
+    """One slim line per SKU (item · likely range · order); details fold out below."""
+    item, rng, qty = st.columns([5, 4, 3], vertical_alignment="center")
+    item.markdown(f'<div class="fc-item">{chip(row.family)}item {row.item_nbr}</div>', unsafe_allow_html=True)
+    if with_range:
+        rng.markdown(bar_html(row), unsafe_allow_html=True)
+    value = qty.number_input("Cases", min_value=0, step=1, value=int(cases), key=key, label_visibility="collapsed")
+    if not with_range:  # standing orders sit inside an expander, and expanders can't nest
+        rng.caption(f"last {row.weekday} {row.last_week_units:g} · 4-week avg {row.weekday_avg:g} units")
+        return {"item_nbr": row.item_nbr, "system_cases": int(cases), "manager_cases": value}
+    with st.expander("Details"):
+        head, reason = order_lines(row, cases, with_range)
+        st.markdown(head)
+        st.caption(reason)
+        a, b, c = st.columns(3)
+        a.caption(f"{row.weekday}s, 4-week avg  \n**{row.weekday_avg:g} units**")
+        b.caption(f"Last {row.weekday}  \n**{row.last_week_units:g} units**")
+        c.caption(f"Units per case  \n**{cp}**")
+        if show_outcome:
+            before = "" if cases == row.order else f" (P50 order before the newsvendor change: {plural(row.order, 'case')})"
+            st.caption(outcome_note(row, cases) + before)
+    return {"item_nbr": row.item_nbr, "system_cases": int(cases), "manager_cases": value}
+
+
 def order_card(row, cases: int, with_range: bool, key: str) -> dict:
     with st.container(border=True):
         left, right = st.columns([3, 1])
@@ -102,15 +165,19 @@ entries = []
 with st.form("order"):
     if design == "redesign":
         look, routine = widest_first(day[~day["routine"]]), day[day["routine"]].sort_values("name")
-        c1, c2 = st.columns(2)
-        c1.metric("Worth a look", f"{len(look)} of {len(day)}")
-        c2.metric("Standing orders", f"{len(routine)} of {len(day)}")
-        st.caption("Widest likely range first — the lines where what you know about tomorrow matters most.")
+        st.markdown(ROW_CSS, unsafe_allow_html=True)
+        st.caption(f"{len(look)} to review · {len(routine)} standing orders · widest likely range first — "
+                   "the lines where what you know about tomorrow matters most")
+        st.markdown('<div class="fc-head"><span style="flex:5">Item</span><span style="flex:4">Likely range '
+                    '(cases) · dot = order</span><span style="flex:3">Order (cases)</span></div>',
+                    unsafe_allow_html=True)
         for row in look.itertuples():
-            entries.append(order_card(row, row.shown, True, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
-        with st.expander(f"Standing orders ({len(routine)}) — every day of the last 4 weeks fit in one case"):
+            entries.append(compact_row(row, row.shown, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
+        with st.expander(f"Standing orders · {len(routine)} items — every day of the last 4 weeks fit in one case"):
+            st.markdown('<span class="fc-standing"></span>', unsafe_allow_html=True)
             for row in routine.itertuples():
-                entries.append(order_card(row, row.shown, False, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
+                entries.append(compact_row(row, row.shown, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}",
+                                           with_range=False))
     else:
         day["abstain"] = day[f"abstain_{design}"]
         ask, ready = day[day["abstain"]].sort_values("name"), day[~day["abstain"]].sort_values("name")

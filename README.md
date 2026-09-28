@@ -138,17 +138,20 @@ PYTHONPATH=src python build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
 ```
 
-One page, phone-width friendly: tomorrow's order for 40 SKUs at store 44.
-Each line reads "ORDER 3 cases (36 units) · likely 2–4" with a one-line
-reason ("Tuesdays have averaged 30 units, about the same as last
-Tuesday's 28"); ranges wider than 4 cases are shown in words instead.
-Lines are listed widest range first; routine SKUs sit in a collapsed
-"standing orders" section. Every line is editable, and **Place order**
-logs what was confirmed or changed (`data/ui_orders_log.csv`). No
-confidence figure appears anywhere, and the page calls no model and no
-LLM. The sidebar's *evaluation view* (for demos, not managers) switches to
-the earlier ASK ME designs (v1, v2) for comparison and can show what
-actually sold.
+One page: tomorrow's order for 40 SKUs at store 44, as slim table-like
+rows — item (with a colour-coded category tag), a likely-range bar with a
+dot at the order, and an editable case count. Each row folds out to its
+details: "ORDER 3 cases (36 units) · likely 1–5", the one-line reason
+("Tuesdays have averaged 19.8 units, lower than last Tuesday's 45"), and
+the numbers behind it. Ranges wider than 4 cases are shown in words
+instead. Rows are listed widest range first; routine SKUs sit in a
+collapsed "standing orders" block. **Place order** logs what was confirmed
+or changed (`data/ui_orders_log.csv`). No confidence figure appears
+anywhere, and the page calls no model and no LLM. The sidebar's
+*evaluation view* (for demos, not managers) has a cost-ratio slider,
+switches to the earlier ASK ME designs (v1, v2) for comparison, and can
+show what actually sold. Favorita has no item names (only number,
+category and class), so items are shown by category and number.
 
 ## Setup
 
