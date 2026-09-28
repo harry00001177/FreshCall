@@ -48,6 +48,7 @@ log every substantive step, including failed attempts.
 40. 2026-09-28 — Very wide ranges shown in words, not numbers
 41. 2026-09-28 — PRE-REGISTRATION: newsvendor ordering (order at the cost-ratio quantile)
 42. 2026-09-28 — Newsvendor, development stores (44, 8): the pre-registered rule loses at high ratios; cause found
+43. 2026-09-28 — AMENDED PRE-REGISTRATION: newsvendor order = lowest expected cost in whole cases
 
 ---
 
@@ -1895,3 +1896,39 @@ which a real store may not accept (a missing item can cost more than its
 own margin) — to be discussed.
 
 Decision on how to proceed: pending (Harry).
+
+---
+
+## 2026-09-28 — AMENDED PRE-REGISTRATION: newsvendor order = lowest expected cost in whole cases
+
+**Decisions (Harry):** Q1 (b) amend the pre-registration before store 45
+is touched, then run it once; Q2 (b) a minimum-order floor is reported as
+a business variant, not judged; Q3 (b) ratio 1 joins the criterion.
+Store 45 has still not been backtested.
+
+**What changes:** the order. Everything else in the 2026-09-28
+pre-registration (9 quantile models, same data, folds, store 45, cost
+definition, no second try) stands.
+
+*Order ("newsvendor order"):* the 9 quantile forecasts (q0.1 … q0.9) are
+treated as 9 equally likely demands. For each whole case count n from 0
+to one case above the highest forecast, expected cost = average over the
+9 of (units over + ratio × units short). The order is the n with the
+lowest expected cost (ties → fewer cases). Cost ratios: 0.25, 0.5, 1, 2,
+4, 9.
+
+*Baseline:* the current system order (P50, rounded up to cases), from the
+same 9-model run.
+
+*Success (store 45, all SKUs):* for **every** ratio including 1, the
+newsvendor order has lower cost per 40-SKU night than the P50 order,
+pooled AND in at least 2 of 3 folds. All six → SUCCESS; some → PARTIAL
+(ratios named); none → FAIL.
+
+*Reported, not judged:*
+- **floor variant** — any SKU that sold at least one unit on each of the
+  7 days before the order date gets at least 1 case; its cost vs the
+  unfloored order at each ratio (what the business rule costs), and how
+  many SKU-days the floor changes;
+- share of SKU-days ordered at 0 cases, per ratio;
+- cost vs last week; routine and non-routine separately; calibration.
