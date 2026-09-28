@@ -49,6 +49,7 @@ log every substantive step, including failed attempts.
 41. 2026-09-28 — PRE-REGISTRATION: newsvendor ordering (order at the cost-ratio quantile)
 42. 2026-09-28 — Newsvendor, development stores (44, 8): the pre-registered rule loses at high ratios; cause found
 43. 2026-09-28 — AMENDED PRE-REGISTRATION: newsvendor order = lowest expected cost in whole cases
+44. 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
 
 ---
 
@@ -1932,3 +1933,54 @@ pooled AND in at least 2 of 3 folds. All six → SUCCESS; some → PARTIAL
   many SKU-days the floor changes;
 - share of SKU-days ordered at 0 cases, per ratio;
 - cost vs last week; routine and non-routine separately; calibration.
+
+---
+
+## 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
+
+`experiments/run_newsvendor.py` at commit `1b12780` (code and amended
+pre-registration `926dfe8` committed before store 45 was backtested; its
+backtest saved without metrics, then evaluated once). Cost per 40-SKU
+night, all SKUs, waste unit = 1, short unit = ratio:
+
+| ratio | last week | P50 (today) | **newsvendor** | vs P50 | folds | 0-case days (P50 → nv) |
+|---|---|---|---|---|---|---|
+| 0.25 | 300.6 | 262.2 | **99.2** | −62.2% | 3/3 | 6.2% → 63.8% |
+| 0.5 | 316.1 | 273.9 | **150.7** | −45.0% | 3/3 | 6.2% → 46.6% |
+| 1 | 347.2 | 297.1 | **229.8** | −22.7% | 3/3 | 6.2% → 30.6% |
+| 2 | 409.2 | 343.7 | **322.7** | −6.1% | 3/3 | 6.2% → 16.6% |
+| 4 | 533.4 | 436.8 | **420.3** | −3.8% | 3/3 | 6.2% → 8.4% |
+| 9 | 843.8 | 669.7 | **549.8** | −17.9% | 3/3 | 6.2% → 5.8% |
+
+**Pre-registered criterion met at all six ratios → SUCCESS.** Routine and
+non-routine SKUs each improve at every ratio too. Development stores 44
+and 8 showed the same pattern (all ratios pass, 3/3 folds).
+
+Calibration, store 45: q0.1 17.2%, q0.3 37.1%, q0.5 55.2%, q0.7 72.8%,
+q0.8 81.7%, q0.9 90.2% — middle quantiles ~5 points high, top ones close.
+
+**Floor variant** (sold every one of the last 7 days → at least 1 case;
+applies to 78.3% of SKU-days): cost 157.6 (r 0.25), 247.4 (r 1), 326.5
+(r 2), 420.6 (r 4), 549.8 (r 9) — the rule costs a lot at low ratios
+(changes 43.5% of SKU-days at r 0.25) and almost nothing from r 2 up.
+
+**Caveat — read before quoting the big numbers:** at low ratios most of
+the saving comes from ordering *nothing* (63.8% of SKU-days at r 0.25).
+That is partly an artifact of on_hand = 0: every day starts from zero and
+a leftover unit is pure waste, so a 12-unit case for an item that sells 3
+a day "wastes" 9 every day. In a real store that case lasts ~4 days. The
+single-day newsvendor is exact for this prototype's assumption, not for a
+real kitchen with carry-over. The results at ratio ≥ 2, where 0-case days
+stay near today's level (16.6% / 8.4% / 5.8% vs 6.2%), are the ones that
+survive this caveat: −6.1%, −3.8%, −17.9% cost vs today's order, and
+−21% to −35% vs last week. Carry-over (a multi-day model) is Layer B and
+needs real inventory data.
+
+**Why it works at every ratio, including 1:** today's order rounds the P50
+forecast *up* to a case, so it already covers demand on ~85–91% of days —
+it is a high-service order whatever the store's costs. The newsvendor
+order compares whole case counts by expected cost, so it can round down
+when an extra case would mostly be wasted.
+
+**Cost:** no LLM calls. Compute: three 9-quantile store backtests, ~3.5
+min each on this laptop.
