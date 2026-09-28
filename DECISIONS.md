@@ -51,6 +51,7 @@ log every substantive step, including failed attempts.
 43. 2026-09-28 — AMENDED PRE-REGISTRATION: newsvendor order = lowest expected cost in whole cases
 44. 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
 45. 2026-09-28 — Newsvendor order wired into the system and UI; routine_policy removed
+46. 2026-09-28 — Consistency pass after the newsvendor change
 
 ---
 
@@ -2017,3 +2018,20 @@ units…") comes from sales history, not from the model, so it can sit next
 to an order below that average (item 1489880: ORDER 1 case beside an
 average of 24.5). It was already possible with the P50 order; the
 newsvendor order makes it more frequent.
+
+---
+
+## 2026-09-28 — Consistency pass after the newsvendor change
+
+- `run_slice.py` (the one-SKU end-to-end pipeline) still ordered at P50
+  rounded up; it now trains the 9-quantile grid and uses the same
+  `system_order` (cost ratio + floor) and shown range as the UI. Section 8
+  checks pass on the real SKU (8 cases, likely 5–9) and on the demo data.
+- The quantile grid is defined once (`newsvendor.QUANTILES`) and imported
+  by the experiment, the UI cache builder, the app and `run_slice.py`.
+- `CONTEXT.md`: routine policy marked retired; "newsvendor order" rewritten
+  to the amended rule (lowest expected cost in whole cases); "minimum-order
+  floor" added; the range entry notes it is stretched to include the order.
+- Re-verified: 152/152 tests; `run_redesign.py` still reports SUCCESS
+  (store 8); `run_newsvendor.py evaluate 45` reproduces SUCCESS and
+  `backtest 45` refuses a second run; the UI loads in all three views.

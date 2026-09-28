@@ -14,7 +14,7 @@ import yaml
 from freshcall.case_gate import straddles_case_boundary
 from freshcall.features import build_daily_grid, same_weekday_avg
 from freshcall.gate import should_abstain
-from freshcall.newsvendor import floor_applies
+from freshcall.newsvendor import QUANTILES, floor_applies
 from freshcall.order import naive_seasonal_order
 from freshcall.redesign import case_range, is_routine, past_max
 from freshcall.ui_logic import select_ui_skus, ui_dates
@@ -22,7 +22,6 @@ from freshcall.ui_logic import select_ui_skus, ui_dates
 STORE = 44
 RESULTS = "data/backtest_results.parquet"
 QUANTILE_RESULTS = "data/newsvendor_store44.parquet"
-QUANTILES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 OUT = "data/ui_cache.parquet"
 FIRST_TEST_DAY, LAST_TEST_DAY = "2017-05-16", "2017-08-15"
 

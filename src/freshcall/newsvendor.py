@@ -7,6 +7,9 @@ newsvendor's single-period setting."""
 
 import math
 
+# The trained quantile grid (pre-registered, DECISIONS.md 2026-09-28).
+QUANTILES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
 
 def critical_quantile(ratio: float) -> float:
     if ratio <= 0:

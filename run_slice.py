@@ -1,5 +1,6 @@
 """The Problem Statement §8 minimal end-to-end version: one SKU, 90 rows,
-predict -> gate -> arithmetic -> explain. This script's job is to prove the
+predict -> gate -> arithmetic -> explain. The order is the system's
+newsvendor order at the configured cost ratio (DECISIONS.md 2026-09-28). This script's job is to prove the
 pipeline has no structural bug, not to produce a defensible accuracy number
 (see docs/PROJECT_OVERVIEW.md phase 1 vs phase 2)."""
 
@@ -13,9 +14,11 @@ from freshcall.containment import check_numeral_containment
 from freshcall.explain import build_fact_block, build_fact_block_v3, order_sentence_from, render_template_fallback
 from freshcall.features import add_features, build_daily_grid, same_weekday_avg
 from freshcall.gate import decide_abstain, rel_width
-from freshcall.model import fit_quantile_models, predict_quantiles
-from freshcall.order import hindsight_demand_order, recommended_cases
+from freshcall.model import fit_quantile_models, predict_all_quantiles
+from freshcall.newsvendor import QUANTILES, floor_applies, system_order
+from freshcall.order import hindsight_demand_order
 from freshcall.redesign import case_range
+from freshcall.ui_logic import shown_range
 
 FEATURE_COLS_STATIC = ["lag_1", "lag_7", "rolling_7_mean"]
 
@@ -60,13 +63,14 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     models = fit_quantile_models(
         train[feature_cols],
         train["unit_sales"],
-        quantiles=cfg["model"]["quantiles"],
+        quantiles=QUANTILES,
         n_estimators=cfg["model"]["n_estimators"],
         max_depth=cfg["model"]["max_depth"],
         learning_rate=cfg["model"]["learning_rate"],
         random_state=cfg["model"]["random_state"],
     )
-    p10, p50, p90 = predict_quantiles(models, predict_row[feature_cols])
+    preds = predict_all_quantiles(models, predict_row[feature_cols])
+    p10, p50, p90 = preds[0.1], preds[0.5], preds[0.9]
 
     abstain = decide_abstain(p10, p50, p90, cfg)
 
@@ -76,11 +80,14 @@ def run(config_path: str = "config.yaml", n_rows: int = 90, train_rows: int = 83
     last_same_weekday = round(float(predict_row["lag_7"].iloc[0]), 1)
 
     case_pack, safety, on_hand = cfg["case_pack"], cfg["safety"], cfg["on_hand"]
-    cases = None if abstain else recommended_cases(p50, safety, on_hand, case_pack)
+    floor = cfg["min_one_case_floor"] and floor_applies(feats["unit_sales"].iloc[train_rows - 7:train_rows])
+    cases = None if abstain else system_order(list(preds.values()), cfg["cost_ratio"], case_pack, floor)
     units = None if abstain else cases * case_pack
     hindsight = hindsight_demand_order(actual, case_pack)
 
     lo, _, hi = case_range(p10, p50, p90, safety, on_hand, case_pack)
+    if cases is not None:
+        lo, hi = shown_range(lo, cases, hi)
     if abstain:  # only under the history gates (v1/v2); the system gate is `none`
         fact_block = build_fact_block(f"item {item_nbr}", True, None, None, last_same_weekday)
         text = render_template_fallback(fact_block)

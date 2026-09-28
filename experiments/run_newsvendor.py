@@ -18,12 +18,11 @@ import yaml
 
 from freshcall.backtest import FOLDS, evaluate_sku_fold_quantiles
 from freshcall.features import build_daily_grid
-from freshcall.newsvendor import floor_applies, newsvendor_cases, order_cost
+from freshcall.newsvendor import QUANTILES, floor_applies, newsvendor_cases, order_cost
 from freshcall.order import recommended_cases
 from freshcall.redesign import is_routine, past_max, unit_errors
 from prepare_data import store_candidates, density_table, whole_unit_items
 
-QUANTILES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 RATIOS = [0.25, 0.5, 1, 2, 4, 9]
 CONFIRM_STORE = 45
 SKU_FILES = {44: "data/full_426_skus.parquet", 8: "data/store8_candidates.parquet",

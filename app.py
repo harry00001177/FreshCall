@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))  # `streamlit run` doesn't take PYTHONPATH from the project
 
 from freshcall.explain import build_fact_block, order_sentence, render_template_fallback  # noqa: E402
-from freshcall.newsvendor import system_order  # noqa: E402
+from freshcall.newsvendor import QUANTILES, system_order  # noqa: E402
 from freshcall.ui_logic import log_records, range_text, shown_range, validate_order, widest_first  # noqa: E402
 
 CACHE = ROOT / "data/ui_cache.parquet"
@@ -43,7 +43,7 @@ cp = cfg["case_pack"]
 cache = pd.read_parquet(CACHE)
 dates = sorted(cache["date"].unique())
 RATIOS = [0.25, 0.5, 1, 2, 4, 9]  # the cost ratios tested on stores 44 / 8 / 45
-QCOLS = [f"q{q}" for q in range(10, 100, 10)]
+QCOLS = [f"q{round(q * 100)}" for q in QUANTILES]  # as build_ui_cache.py names them
 
 with st.sidebar:
     date = st.selectbox("Order for", dates, format_func=lambda d: pd.Timestamp(d).strftime("%a %d %b %Y"))
