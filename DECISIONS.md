@@ -2046,7 +2046,7 @@ newsvendor order makes it more frequent.
 `docs/HANDOFF.md` now describes the current state (working rules, design
 history table, architecture, data, order rule and settings, guardrails
 built vs not built, open items, how to run); the Milestone-1 version is
-kept in git history (`git show b725999:docs/HANDOFF.md`).
+replaced.
 `docs/PROJECT_OVERVIEW.md` (Harry's Chinese study guide): sections 1–6 and
 8–9 rewritten from the abstain design to the order + range + newsvendor
 design; section 7 (progress) kept. Written only from logged numbers;
