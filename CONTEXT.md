@@ -30,7 +30,8 @@ Terms only. No implementation details here — see `src/` and `config.yaml`.
   "Order Accuracy," which implied validation of inventory-aware ordering
   (Layer B) that this dataset cannot support.)
 - **Layer A** — the part of the system this prototype actually validates:
-  demand estimation + uncertainty + abstention + wording.
+  demand estimation + uncertainty + how it is shown to the manager (first
+  abstention, now the order + range) + wording.
 - **Layer B** — inventory-aware order optimization (using real on-hand stock).
   Not implementable on the Favorita dataset (no inventory field); not
   validated by this prototype.
@@ -80,7 +81,8 @@ Terms only. No implementation details here — see `src/` and `config.yaml`.
   A business setting priced by the store, not tuned by us.
 - **routine SKU** — on a given day, a SKU whose every day of sales in the
   past 28 fit in one case. Its order is obvious; it is shown as a collapsed
-  **standing order** at the model's number rather than asking for attention.
+  **standing order** at the number the store's routine policy picks, rather
+  than asking for attention.
 - **range** — the cases implied by P10 and P90 ("likely 2–4"), shown next to
   every non-routine order. Information for the manager, not an alarm; it
   replaces ASK ME in the redesign.
