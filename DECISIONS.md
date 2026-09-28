@@ -54,6 +54,7 @@ log every substantive step, including failed attempts.
 46. 2026-09-28 — Consistency pass after the newsvendor change
 47. 2026-09-28 — HANDOFF and project overview rewritten for the final design
 48. 2026-09-28 — Submission check: repo compliance, AI-assistance statement
+49. 2026-09-28 — Working notes moved out of the repo; history cleaned
 
 ---
 
@@ -2070,3 +2071,17 @@ every human label by Harry; every number run and reproducible); remove
 personal details from two working docs;
 Kaggle derived tables left as they are. Also made pronouns in the docs
 neutral.
+
+---
+
+## 2026-09-28 — Working notes moved out of the repo; history cleaned
+
+**Decision (Harry):** the public repo holds only the course submission.
+`docs/HANDOFF.md` (a hand-over note for AI sessions) and
+`docs/PROJECT_OVERVIEW.md` (Harry's personal study guide, "not for the
+instructor") are removed from the repo and kept locally outside it. Earlier
+entries that mention them are left as the record of what happened.
+The git history is rewritten to drop both files from every commit and
+redact two personal lines in this log — commit order and dates are kept,
+so every pre-registration still visibly precedes its result. Commit hashes
+changed; the hashes cited in this log are updated to the new ones.

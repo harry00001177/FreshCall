@@ -2,7 +2,7 @@
 predict -> gate -> arithmetic -> explain. The order is the system's
 newsvendor order at the configured cost ratio (DECISIONS.md 2026-09-28). This script's job is to prove the
 pipeline has no structural bug, not to produce a defensible accuracy number
-(see docs/PROJECT_OVERVIEW.md phase 1 vs phase 2)."""
+(see DECISIONS.md, Phase 1 vs Phase 2)."""
 
 import time
 from functools import lru_cache
