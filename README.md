@@ -149,7 +149,7 @@ collapsed "standing orders" block. **Place order** logs what was confirmed
 or changed (`data/ui_orders_log.csv`). No confidence figure appears
 anywhere, and the page calls no model and no LLM. The sidebar's
 *evaluation view* (for demos, not managers) has a cost-ratio slider,
-switches to the earlier ASK ME designs (v1, v2) for comparison, and can
+switches between the designs — v3 (current) and the earlier ASK ME designs v1 and v2 — and can
 show what actually sold. Favorita has no item names (only number,
 category and class), so items are shown by category and number.
 

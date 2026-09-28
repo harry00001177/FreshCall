@@ -56,6 +56,7 @@ log every substantive step, including failed attempts.
 48. 2026-09-28 — Submission check: repo compliance, AI-assistance statement
 49. 2026-09-28 — Working notes moved out of the repo; history cleaned
 50. 2026-09-28 — UI: slim expandable rows
+51. 2026-09-28 — UI labels: designs named v1 / v2 / v3; short cost-ratio note
 
 ---
 
@@ -2109,3 +2110,14 @@ collapsed block, one line each with last week's and the 4-week average
 (Streamlit can't nest a drawer inside it). Checked in the browser at
 laptop width (steppers visible), narrow pane and phone width (rows stack;
 table header hidden), drawer open/close, and Place order (40 confirmed).
+
+---
+
+## 2026-09-28 — UI labels: designs named v1 / v2 / v3; short cost-ratio note
+
+**Decision (Harry):** the evaluation view's design switch reads "v3
+(current): order + likely range", "v2: case-straddle + ASK ME", "v1:
+rel_width + ASK ME" (v3 = the order + range redesign with the newsvendor
+order). The cost-ratio slider is labelled "Cost ratio" with one line
+under it: "How much worse running out is than wasting. Slide right to
+order more, left to order less." Wording only; checked in the browser.

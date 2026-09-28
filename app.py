@@ -27,9 +27,9 @@ from freshcall.ui_logic import log_records, range_bar, range_text, shown_range, 
 CACHE = ROOT / "data/ui_cache.parquet"
 LOG = ROOT / "data/ui_orders_log.csv"
 DESIGNS = {
-    "redesign": "Newsvendor order + likely range (system)",
-    "case_straddle": "History v2: case-straddle + ASK ME",
-    "rel_width": "History v1: rel_width 0.60 + ASK ME",
+    "redesign": "v3 (current): order + likely range",
+    "case_straddle": "v2: case-straddle + ASK ME",
+    "rel_width": "v1: rel_width + ASK ME",
 }
 
 st.set_page_config(page_title="FreshCall", layout="centered")
@@ -51,8 +51,9 @@ with st.sidebar:
     st.caption("Evaluation view — for the demo, not part of the manager's screen")
     design = st.radio("Design", list(DESIGNS), format_func=DESIGNS.get)
     show_outcome = st.checkbox("Show what actually sold (backtest)")
-    ratio = st.select_slider("Cost ratio: one unit short costs … × one unit wasted", RATIOS,
-                             value=cfg["cost_ratio"], help="A store setting (config.yaml). Moved here for the demo only.")
+    ratio = st.select_slider("Cost ratio", RATIOS, value=cfg["cost_ratio"],
+                             help="A store setting (config.yaml), shown here for the demo only.")
+    st.caption("How much worse running out is than wasting. Slide right to order more, left to order less.")
     use_floor = st.checkbox("Sold every day last week → at least 1 case", value=cfg["min_one_case_floor"])
 
 day = cache[cache["date"] == date].copy()
@@ -181,7 +182,7 @@ with st.form("order"):
     else:
         day["abstain"] = day[f"abstain_{design}"]
         ask, ready = day[day["abstain"]].sort_values("name"), day[~day["abstain"]].sort_values("name")
-        st.info("History view: an earlier design that handed uncertain SKUs back as ASK ME.")
+        st.info(f"{DESIGNS[design].split(':')[0]} (earlier design): uncertain SKUs were handed back as ASK ME.")
         c1, c2 = st.columns(2)
         c1.metric("Need your call", f"{len(ask)} of {len(day)}")
         c2.metric("Ready to confirm", f"{len(ready)} of {len(day)}")
