@@ -1,5 +1,5 @@
 """Explanation fix, batch 3, exactly as pre-registered (DECISIONS.md
-2026-09-25, commit eae5369). Fact block v2: the same weekday's 4-week
+2026-09-25, commit 1fc6919). Fact block v2: the same weekday's 4-week
 average instead of a 7-day mean. Cases: (a) the 7 batch-2 SKU-days
 (incl. case 16) for a before/after on the same inputs; (b) 7 unused
 non-routine SKU-days with P50 >= 1, seed 43.

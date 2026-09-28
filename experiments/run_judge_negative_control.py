@@ -1,5 +1,5 @@
 """Negative-control test of the L2 judge, exactly as pre-registered
-(DECISIONS.md 2026-09-25, commit 265da47): six sentences with one
+(DECISIONS.md 2026-09-25, commit d31ffc8): six sentences with one
 deliberate flaw each plus two clean controls, on real harness fact blocks.
 Measures whether the judge catches bad sentences, and which flaws the L1
 numeral check already catches on its own."""

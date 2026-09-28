@@ -514,8 +514,8 @@ final submission.
 ## 2026-09-24 — Post-fix full re-run: results, reported exactly as pre-registered
 
 **What:** Re-ran all 426 SKUs × 3 folds (39,192 SKU-day predictions) with
-the pre-registered fix only (code commit `4912d93`, pre-registration
-commit `2a1d668`, both pushed before the re-run finished). Tables below
+the pre-registered fix only (code commit `39ebcfc`, pre-registration
+commit `cd118fe`, both pushed before the re-run finished). Tables below
 come from `report_backtest.py`; before-fix numbers are the ones already
 logged above (raw file kept as `data/backtest_results_prefix.parquet`).
 
@@ -649,7 +649,7 @@ the signal is not modified and re-run.
 ## 2026-09-24 — Case-straddle experiment results: passes the pre-registered test, but abstains far too often to use
 
 **What:** Ran `run_case_gate_experiment.py` once, as pre-registered
-(code commit `eaba9ff`, committed before the run). Store 49 backtest saved
+(code commit `faf1c9a`, committed before the run). Store 49 backtest saved
 to `data/backtest_results_store49.parquet`; store 44 results file read
 only. No existing file or result changed.
 
@@ -872,7 +872,7 @@ No other exclusion is tried afterwards.
 ## 2026-09-24 — Sensitivity check results (active SKUs only) and harness batch 2 generated
 
 **Sensitivity check** (`run_sensitivity_active_skus.py`, code commit
-`e419d5e` before the run): 21 inactive SKUs excluded per store (1,932
+`a4d86d7` before the run): 21 inactive SKUs excluded per store (1,932
 SKU-days each). Original pre-registered numbers remain primary.
 
 | | original | active SKUs only |
@@ -911,7 +911,7 @@ labelling blind.
 **Harry's batch 2 labels (blind):** faithful 7/7, usable 7/7.
 
 **L2 judge** (`anthropic/claude-haiku-4.5` via OpenRouter, Harry's choice —
-different vendor from the gpt-4o-mini generator; code commit `1008d65`
+different vendor from the gpt-4o-mini generator; code commit `777a12d`
 before the run; listed price $1 / $5 per million input / output tokens):
 over all 17 sentences, faithful 17/17, usable 17/17, 0 unparseable, **0
 disagreements with Harry** on either question. L1 on raw LLM output over
@@ -985,7 +985,7 @@ contain only fact-block numbers, so only the judge can catch them.
 flaws caught by L1, by the judge, by either; false alarms. No pass/fail
 threshold: with 6 items this is a probe, and any miss is logged as a
 known blind spot. Same judge model and prompt as the 17-sentence run
-(commit `1008d65`), temperature 0, run once. The case-16 kind of flaw
+(commit `777a12d`), temperature 0, run once. The case-16 kind of flaw
 (reason points the opposite way to the order) is deliberately not in
 this set: the current rubric doesn't ask about it, so a "yes" there
 wouldn't be a judge error — that's follow-up 2.
@@ -994,7 +994,7 @@ wouldn't be a judge error — that's follow-up 2.
 
 ## 2026-09-25 — Negative-control results: the judge catches 5 of 6 flaws, misses overstatement, and its reasons aren't reliable
 
-Ran `run_judge_negative_control.py` once (code commit `a9939b4` before the
+Ran `run_judge_negative_control.py` once (code commit `9233270` before the
 run; 8 real judge calls). Output in `data/l1l2/negative_control.csv`.
 
 | id | flaw | L1 | judge faithful / usable | outcome |
@@ -1079,7 +1079,7 @@ test).
 ## 2026-09-25 — Comparison-word restriction: pre-registered criterion met (7/7)
 
 Ran `run_comparison_word_check.py` once (prompt change + script committed
-in `93e9fd2` before the run; 7 real gpt-4o-mini calls).
+in `4fd310f` before the run; 7 real gpt-4o-mini calls).
 
 | | old prompt | new prompt |
 |---|---|---|
@@ -1222,7 +1222,7 @@ No thresholds, windows or scaling factors are changed after seeing results.
 
 ## 2026-09-25 — Monitor and look-ahead results; demo data added
 
-**Monitors** (`run_monitors.py`, code commit `4d6564d` before the run; no
+**Monitors** (`run_monitors.py`, code commit `cc16e13` before the run; no
 refit, stored predictions). Bands fitted on fold 1, applied to folds 2–3:
 
 | | store 44 | store 49 |
@@ -1262,7 +1262,7 @@ both lists).
 The selection look-ahead is real but has no material effect on any
 reported number.
 
-**Demo data** (commit `ecf14c1`): `make_demo_data.py` writes a synthetic
+**Demo data** (commit `2a54eec`): `make_demo_data.py` writes a synthetic
 90-day series (`demo/demo_sales.csv`, store 0 / item 0, fixed seed);
 `run_slice.py --demo` runs end to end without the Kaggle data. Never used
 for any reported result.
@@ -1271,7 +1271,7 @@ for any reported result.
 
 ## 2026-09-25 — Leak test result: one missing shift(1) would have faked a "target met"
 
-`run_leak_test.py` (code commit `29cd392` before the run): store 44, 426
+`run_leak_test.py` (code commit `e63ce95` before the run): store 44, 426
 SKUs × 3 folds, refit with `rolling_7_mean` including the day being
 predicted. Output `data/backtest_results_leaky.parquet`.
 
@@ -1516,7 +1516,7 @@ threshold changed. Whatever it shows is reported.
 
 ## 2026-09-25 — Redesign results: confirmed on store 8 (pre-registered SUCCESS)
 
-`experiments/run_redesign.py` (commit `0c9176d`, before any store-8 result
+`experiments/run_redesign.py` (commit `164185b`, before any store-8 result
 existed; store-8 backtest saved without printing metrics, then evaluated
 once). Per 40-SKU night; redesign = manager accepts every suggestion (a
 floor); timings are assumptions.
@@ -1718,7 +1718,7 @@ questions) runs after, and its disagreements are reported.
 
 ## 2026-09-25 — Template sentence results: pre-registered SUCCESS; the judge is unreliable on "direction"
 
-`experiments/run_explanation_v3.py` (commit `3fc1ca9` before generating).
+`experiments/run_explanation_v3.py` (commit `e179388` before generating).
 Same 14 SKU-days as batch 3.
 
 - **Deterministic checks:** L1 14/14; comparison word correct under the 10%
@@ -1943,8 +1943,8 @@ pooled AND in at least 2 of 3 folds. All six → SUCCESS; some → PARTIAL
 
 ## 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
 
-`experiments/run_newsvendor.py` at commit `1b12780` (code and amended
-pre-registration `926dfe8` committed before store 45 was backtested; its
+`experiments/run_newsvendor.py` at commit `85ed854` (code and amended
+pre-registration `703de07` committed before store 45 was backtested; its
 backtest saved without metrics, then evaluated once). Cost per 40-SKU
 night, all SKUs, waste unit = 1, short unit = ratio:
 

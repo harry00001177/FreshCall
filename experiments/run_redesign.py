@@ -1,5 +1,5 @@
 """Redesign test, exactly as pre-registered (DECISIONS.md 2026-09-25,
-commit 62f2d1d): "an order for every SKU + its likely range", routine SKUs
+commit 432790a): "an order for every SKU + its likely range", routine SKUs
 as standing orders, compared with today's practice (last week's same day)
 per 40-SKU night. Store 44 = development; store 8 = confirmation (success
 judged there only). Reads stored backtest predictions; writes nothing.

@@ -1,5 +1,5 @@
 """Template sentence test, exactly as pre-registered (DECISIONS.md
-2026-09-25, commit 6824573): the same 14 batch-3 SKU-days, written by the
+2026-09-25, commit ccb65b0): the same 14 batch-3 SKU-days, written by the
 deterministic v3 template instead of the LLM.
 
   step 1:  python experiments/run_explanation_v3.py generate -> data/l1l2/cases_v3_template.csv

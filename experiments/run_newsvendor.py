@@ -1,5 +1,5 @@
 """Newsvendor test, exactly as pre-registered and then amended before store
-45 was touched (DECISIONS.md 2026-09-28, commits f575cc7 and 926dfe8):
+45 was touched (DECISIONS.md 2026-09-28, commits 50d3d51 and 703de07):
 order the whole case count with the lowest expected cost over the 9
 quantile forecasts, and compare its cost (r x units short + units over,
 per 40-SKU night) with the P50 order and with last week's same day. Store 44 (and 8) = development;

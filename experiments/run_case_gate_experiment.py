@@ -1,5 +1,5 @@
 """Case-straddle gate experiment, exactly as pre-registered in DECISIONS.md
-(2026-09-24, commit a708b61). Store 44 = development (reads the existing
+(2026-09-24, commit a12866f). Store 44 = development (reads the existing
 results file, never writes it). Store 49 = confirmation (backtest run
 once, saved to its own file). Success is judged on store 49 only."""
 
