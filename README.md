@@ -12,7 +12,14 @@ produced by deterministic Python. An LLM is used where it earned a place:
 as a judge inside the evaluation.
 
 NTU MSc Enterprise AI, PE6201 (Emerging AI Technologies), end-of-course
-project. Glossary: [`CONTEXT.md`](./CONTEXT.md). Every decision, result and
+project.
+
+**How this was built:** the code was written with AI assistance
+(Claude Code). Every design decision was made by me, the human labels in
+the evaluation were done by me, and every number reported was actually
+run and can be reproduced from this repository.
+
+Glossary: [`CONTEXT.md`](./CONTEXT.md). Every decision, result and
 correction, with the real numbers: [`DECISIONS.md`](./DECISIONS.md).
 
 ## How the design got here

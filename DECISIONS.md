@@ -53,6 +53,7 @@ log every substantive step, including failed attempts.
 45. 2026-09-28 — Newsvendor order wired into the system and UI; routine_policy removed
 46. 2026-09-28 — Consistency pass after the newsvendor change
 47. 2026-09-28 — HANDOFF and project overview rewritten for the final design
+48. 2026-09-28 — Submission check: repo compliance, AI-assistance statement
 
 ---
 
@@ -899,7 +900,7 @@ SKU-days each). Original pre-registered numbers remain primary.
 
 **Harness batch 2** (7 real gpt-4o-mini calls): L1 on raw output 7/7 pass,
 all seven non-trivial (order 1–4 cases, real averages). Harry's labels
-pending — sentences deliberately not commented on here to keep his
+pending — sentences deliberately not commented on here to keep the
 labelling blind.
 
 ---
@@ -2051,3 +2052,21 @@ kept in git history (`git show b725999:docs/HANDOFF.md`).
 design; section 7 (progress) kept. Written only from logged numbers;
 planned-but-never-built items (novelty check, calendar rule, earthquake
 probe, n8n low-code trial, deployment) are stated as not built.
+
+---
+
+## 2026-09-28 — Submission check: repo compliance, AI-assistance statement
+
+Audited the full git history (70 commits) before submission: no API key
+or token in any commit; no raw Kaggle data ever committed (only the two
+Problem Statement versions, the synthetic demo series and three small
+evaluation tables); repo is public. Course rules found (Course Outline):
+AI tools may be used, but individually submitted work must be the
+student's own with authorship clearly attributed.
+
+**Decisions (Harry):** add a "How this was built" statement to the README
+(code written with AI assistance — Claude Code; every design decision and
+every human label by Harry; every number run and reproducible); remove
+personal details from two working docs;
+Kaggle derived tables left as they are. Also made pronouns in the docs
+neutral.
