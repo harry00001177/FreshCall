@@ -4,7 +4,8 @@ gets logged when the manager confirms or overrides."""
 
 import pandas as pd
 
-from freshcall.ui_logic import log_records, range_text, select_ui_skus, ui_dates, validate_order, widest_first
+from freshcall.ui_logic import (log_records, range_text, select_ui_skus, shown_range, ui_dates, validate_order,
+                                widest_first)
 
 
 class TestSelectUiSkus:
@@ -68,3 +69,17 @@ class TestWidestFirst:
         df = pd.DataFrame({"item_nbr": [1, 2, 3], "lo": [1, 1, 2], "hi": [2, 3, 2],
                            "p10": [5.0, 5.0, 20.0], "p90": [15.0, 30.0, 22.0]})
         assert widest_first(df)["item_nbr"].tolist() == [2, 1, 3]
+
+
+class TestShownRange:
+    """The newsvendor order can round below the cases P10 implies; a range
+    shown beside an order must never exclude that order."""
+
+    def test_order_below_the_range_extends_it_down(self):
+        assert shown_range(lo=1, order=0, hi=2) == (0, 2)
+
+    def test_order_inside_the_range_changes_nothing(self):
+        assert shown_range(lo=1, order=2, hi=3) == (1, 3)
+
+    def test_order_above_the_range_extends_it_up(self):
+        assert shown_range(lo=1, order=4, hi=3) == (1, 4)

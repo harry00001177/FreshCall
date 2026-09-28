@@ -1,7 +1,8 @@
-"""FreshCall — one-page UI for the store manager (DECISIONS.md 2026-09-25).
-The redesign: every SKU gets tomorrow's order in cases (with units), plus
-its likely range when P10 and P90 disagree; lines are listed widest range
-first; routine SKUs are collapsed standing orders. Every line is editable
+"""FreshCall — one-page UI for the store manager (DECISIONS.md 2026-09-25,
+2026-09-28). Every SKU gets tomorrow's order in cases (with units): the
+newsvendor order — the whole case count with the lowest expected cost at
+the store's cost ratio — plus its likely range; lines are listed widest
+range first; routine SKUs are collapsed standing orders. Every line is editable
 and "Place order" logs confirmed / changed. No confidence figure appears.
 The sidebar's history view shows the earlier designs (v1 / v2, which
 handed uncertain SKUs back as ASK ME) for comparison. Reads
@@ -20,13 +21,13 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))  # `streamlit run` doesn't take PYTHONPATH from the project
 
 from freshcall.explain import build_fact_block, order_sentence, render_template_fallback  # noqa: E402
-from freshcall.redesign import standing_order  # noqa: E402
-from freshcall.ui_logic import log_records, range_text, validate_order, widest_first  # noqa: E402
+from freshcall.newsvendor import system_order  # noqa: E402
+from freshcall.ui_logic import log_records, range_text, shown_range, validate_order, widest_first  # noqa: E402
 
 CACHE = ROOT / "data/ui_cache.parquet"
 LOG = ROOT / "data/ui_orders_log.csv"
 DESIGNS = {
-    "redesign": "Order + likely range (system)",
+    "redesign": "Newsvendor order + likely range (system)",
     "case_straddle": "History v2: case-straddle + ASK ME",
     "rel_width": "History v1: rel_width 0.60 + ASK ME",
 }
@@ -41,6 +42,8 @@ cfg = yaml.safe_load(open(ROOT / "config.yaml"))
 cp = cfg["case_pack"]
 cache = pd.read_parquet(CACHE)
 dates = sorted(cache["date"].unique())
+RATIOS = [0.25, 0.5, 1, 2, 4, 9]  # the cost ratios tested on stores 44 / 8 / 45
+QCOLS = [f"q{q}" for q in range(10, 100, 10)]
 
 with st.sidebar:
     date = st.selectbox("Order for", dates, format_func=lambda d: pd.Timestamp(d).strftime("%a %d %b %Y"))
@@ -48,13 +51,15 @@ with st.sidebar:
     st.caption("Evaluation view — for the demo, not part of the manager's screen")
     design = st.radio("Design", list(DESIGNS), format_func=DESIGNS.get)
     show_outcome = st.checkbox("Show what actually sold (backtest)")
+    ratio = st.select_slider("Cost ratio: one unit short costs … × one unit wasted", RATIOS,
+                             value=cfg["cost_ratio"], help="A store setting (config.yaml). Moved here for the demo only.")
+    use_floor = st.checkbox("Sold every day last week → at least 1 case", value=cfg["min_one_case_floor"])
 
 day = cache[cache["date"] == date].copy()
 day["name"] = day["family"].str.title() + " · item " + day["item_nbr"].astype(str)
-day["shown"] = [
-    standing_order(cfg["routine_policy"], r.order, r.last_week_units, cp) if r.routine else r.order
-    for r in day.itertuples()
-]
+day["shown"] = [system_order([getattr(r, c) for c in QCOLS], ratio, cp, use_floor and r.floor)
+                for r in day.itertuples()]
+day["lo"], day["hi"] = zip(*[shown_range(r.lo, r.shown, r.hi) for r in day.itertuples()])
 
 
 def plural(n, word: str) -> str:
@@ -83,13 +88,15 @@ def order_card(row, cases: int, with_range: bool, key: str) -> dict:
         left.markdown(head)
         left.caption(reason)
         if show_outcome:
-            left.caption(outcome_note(row, cases))
+            before = "" if cases == row.order else f" (P50 order before the newsvendor change: {plural(row.order, 'case')})"
+            left.caption(outcome_note(row, cases) + before)
         value = right.number_input("Cases", min_value=0, step=1, value=int(cases), key=key)
     return {"item_nbr": row.item_nbr, "system_cases": int(cases), "manager_cases": value}
 
 
 st.title("FreshCall")
-st.caption(f"Tomorrow's fresh order · Store 44 · {pd.Timestamp(date).strftime('%A %d %B %Y')}")
+st.caption(f"Tomorrow's fresh order · Store 44 · {pd.Timestamp(date).strftime('%A %d %B %Y')} · "
+           f"ordered for a store where running out costs {ratio:g}× wasting")
 
 entries = []
 with st.form("order"):
@@ -100,10 +107,10 @@ with st.form("order"):
         c2.metric("Standing orders", f"{len(routine)} of {len(day)}")
         st.caption("Widest likely range first — the lines where what you know about tomorrow matters most.")
         for row in look.itertuples():
-            entries.append(order_card(row, row.shown, True, f"{date}-{design}-{row.item_nbr}"))
+            entries.append(order_card(row, row.shown, True, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
         with st.expander(f"Standing orders ({len(routine)}) — every day of the last 4 weeks fit in one case"):
             for row in routine.itertuples():
-                entries.append(order_card(row, row.shown, False, f"{date}-{design}-{row.item_nbr}"))
+                entries.append(order_card(row, row.shown, False, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
     else:
         day["abstain"] = day[f"abstain_{design}"]
         ask, ready = day[day["abstain"]].sort_values("name"), day[~day["abstain"]].sort_values("name")

@@ -9,7 +9,8 @@ import pandas as pd
 import pytest
 
 from freshcall.model import fit_quantile_models, predict_all_quantiles
-from freshcall.newsvendor import critical_quantile, floor_applies, nearest_quantile, newsvendor_cases, order_cost
+from freshcall.newsvendor import (critical_quantile, floor_applies, nearest_quantile, newsvendor_cases, order_cost,
+                                  system_order)
 
 GRID = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
@@ -133,3 +134,17 @@ class TestFloor:
 
     def test_needs_a_full_week_of_history(self):
         assert floor_applies([1, 2, 3]) is False
+
+
+class TestSystemOrder:
+    """What the UI orders (DECISIONS.md 2026-09-28): the newsvendor order,
+    lifted to 1 case when the floor applies and the store has it on."""
+
+    def test_floor_lifts_a_zero_order_to_one_case(self):
+        assert system_order([3.0] * 9, ratio=1, case_pack=12, floor=True) == 1
+
+    def test_no_floor_leaves_the_zero(self):
+        assert system_order([3.0] * 9, ratio=1, case_pack=12, floor=False) == 0
+
+    def test_floor_never_lowers_an_order(self):
+        assert system_order([40.0] * 9, ratio=4, case_pack=12, floor=True) == 4

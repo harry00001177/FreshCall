@@ -7,11 +7,16 @@ case_pack: 12          # ASSUMPTION — one global value for every SKU (see DECI
 safety: 0               # ASSUMPTION — kept 0 so recommended cases are comparable to hindsight_demand_order
 on_hand: 0              # Not an assumption — Favorita has no inventory field, so this is a data limitation
 
-# Routine SKUs (every day of the past 28 fit in one case) are standing orders.
-# model: fewer stockouts, more waste; last_week: the reverse. On stores 44/8,
-# last_week pays only if a unit short costs < ~4.6 units wasted -- a
-# BUSINESS SETTING for each store, not a tuned value (DECISIONS.md 2026-09-25).
-routine_policy: model         # model | last_week
+# Newsvendor ordering (confirmed on store 45, DECISIONS.md 2026-09-28): every
+# SKU (routine or not) orders the whole case count with the lowest expected
+# cost, where one unit short costs `cost_ratio` x one unit wasted. A BUSINESS
+# SETTING for each store, never estimated from sales data. 4 = "rather waste
+# than run out"; below ~2 the order drops to 0 cases on many days (partly an
+# artifact of on_hand = 0: no leftover carries to tomorrow).
+cost_ratio: 4                 # one of 0.25, 0.5, 1, 2, 4, 9 (the tested values)
+# Business rule: a SKU that sold on each of the last 7 days gets >= 1 case.
+# Costs almost nothing at cost_ratio >= 2 (store 45: 420.3 -> 420.6 at 4).
+min_one_case_floor: true
 
 # The UI shows "likely lo–hi" only when the range is narrow enough to act on;
 # wider ranges (1.4–5.6% of order lines on stores 44/8) are shown in words.

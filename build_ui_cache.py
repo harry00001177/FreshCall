@@ -1,8 +1,10 @@
 """Pre-computes everything the UI shows (DECISIONS.md 2026-09-25): store 44,
 40 SKUs (fixed seed, still-selling only), one date every 14 days of the
-test period. Forecasts come from the stored post-fix backtest (no refit).
-Stores what the redesign needs (case range, routine flag, both standing-
-order policies, the v3 sentence's facts) and, for the UI's history view,
+test period. Forecasts come from the stored backtests (no refit): P10/P50/
+P90 from the post-fix run (range, history view) and the 9 quantiles from
+the newsvendor run (the order, recomputed live in the app for any cost
+ratio). Stores what the redesign needs (case range, routine flag, floor
+flag, the v3 sentence's facts) and, for the UI's history view,
 the v1 / v2 gates' ASK ME decisions. No LLM call: the order sentence is a
 deterministic template rendered by the app. Output: data/ui_cache.parquet."""
 
@@ -12,12 +14,15 @@ import yaml
 from freshcall.case_gate import straddles_case_boundary
 from freshcall.features import build_daily_grid, same_weekday_avg
 from freshcall.gate import should_abstain
+from freshcall.newsvendor import floor_applies
 from freshcall.order import naive_seasonal_order
 from freshcall.redesign import case_range, is_routine, past_max
 from freshcall.ui_logic import select_ui_skus, ui_dates
 
 STORE = 44
 RESULTS = "data/backtest_results.parquet"
+QUANTILE_RESULTS = "data/newsvendor_store44.parquet"
+QUANTILES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 OUT = "data/ui_cache.parquet"
 FIRST_TEST_DAY, LAST_TEST_DAY = "2017-05-16", "2017-08-15"
 
@@ -37,6 +42,11 @@ def main():
 
     results = pd.read_parquet(RESULTS)
     results = results[results["item_nbr"].isin(skus) & results["date"].isin(dates)]
+    qcols = [f"q{round(q * 100)}" for q in QUANTILES]  # q10 ... q90 (itertuples needs identifiers)
+    quantiles = pd.read_parquet(QUANTILE_RESULTS).rename(columns={f"q{q}": c for q, c in zip(QUANTILES, qcols)})
+    results = results.merge(quantiles[["item_nbr", "date"] + qcols],
+                            on=["item_nbr", "date"], how="left", validate="one_to_one")
+    assert results[qcols].notna().all().all(), "every UI SKU-day needs its 9 quantile forecasts"
 
     daily = {}
     for item in skus:
@@ -52,6 +62,8 @@ def main():
             "date": r.date, "item_nbr": r.item_nbr, "family": families.get(r.item_nbr, ""),
             "p10": r.p10, "p50": r.p50, "p90": r.p90, "lo": lo, "order": order, "hi": hi,
             "routine": is_routine(past_max(s).loc[r.date], cp),
+            "floor": bool(floor_applies(s.shift(1).loc[:r.date].tail(7))),
+            **{c: getattr(r, c) for c in qcols},
             "last_week_units": last_week_units, "last_week_cases": naive_seasonal_order(last_week_units, cp),
             "weekday": r.date.day_name(), "weekday_avg": round(float(same_weekday_avg(s).loc[r.date]), 1),
             "abstain_case_straddle": straddles_case_boundary(r.p10, r.p50, r.p90, safety, on_hand, cp),

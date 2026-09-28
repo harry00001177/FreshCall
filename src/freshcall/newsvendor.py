@@ -45,3 +45,11 @@ def floor_applies(last_7_days_sales) -> bool:
     each of the 7 days before the order date always gets at least 1 case."""
     days = list(last_7_days_sales)
     return len(days) == 7 and all(d >= 1 for d in days)
+
+
+def system_order(scenarios, ratio: float, case_pack: int, floor: bool) -> int:
+    """The order the UI shows: the newsvendor order, lifted to at least 1
+    case when `floor` is set (the store's minimum-order rule is on and the
+    SKU sold on each of the last 7 days)."""
+    cases = newsvendor_cases(scenarios, ratio, case_pack)
+    return max(cases, 1) if floor else cases

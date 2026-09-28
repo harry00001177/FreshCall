@@ -1,8 +1,9 @@
 # FreshCall
 
 Next-day fresh-food ordering copilot for QSR store managers. For every
-SKU it gives tomorrow's order in whole cases (and units), the **likely
-range** when the forecast is uncertain, and a one-line reason — with the
+SKU it gives tomorrow's order in whole cases (and units) — sized for the
+store's own **cost ratio** (how much worse running out is than wasting) —
+the **likely range** when the forecast is uncertain, and a one-line reason — with the
 uncertain lines listed first, so the manager's attention goes where their
 own knowledge (a promotion, a local event, a delivery problem) matters
 most. Routine SKUs are collapsed as standing orders. Forecasts come from
@@ -18,7 +19,7 @@ correction, with the real numbers: [`DECISIONS.md`](./DECISIONS.md).
 
 The project started as "size tomorrow's order, **or abstain**" (hand
 uncertain SKUs back to the manager as ASK ME). Evaluated on Kaggle
-Favorita data (a supermarket stand-in for QSR data; 3 stores × 400+ SKUs ×
+Favorita data (a supermarket stand-in for QSR data; 4 stores × 400+ SKUs ×
 3 rolling-origin folds, each design pre-registered before its test):
 
 1. **v1 — abstain when the interval is wide (`rel_width`): failed.**
@@ -39,8 +40,23 @@ Favorita data (a supermarket stand-in for QSR data; 3 stores × 400+ SKUs ×
    (faster under all 9 timing assumptions tested). The needed cases fall
    inside the shown range ~95% of the time; the widest-range quarter holds
    ~45% of the wrong orders. Trade-off stated, not hidden: on routine,
-   low-volume SKUs the model's standing order wastes more units than "last
-   week" while cutting stockouts — a store setting (`routine_policy`).
+   low-volume SKUs the P50 order wasted more units than "last week" while
+   cutting stockouts — which raised the next question.
+5. **Newsvendor ordering — order for the store's costs: confirmed** on a
+   fourth unseen store (store 45, pre-registered, all 6 cost ratios, 3/3
+   folds each). Rounding a P50 forecast up to whole cases already covers
+   demand on ~85–91% of days, so "P50" was really a high-service order
+   whatever the store's costs. The new order picks the whole case count
+   with the lowest expected cost over 9 quantile forecasts. Cost vs today's
+   order, per 40-SKU night: −23% when a unit short and a unit wasted cost
+   the same, −6% / −4% / −18% when running out costs 2× / 4× / 9× more
+   (−21% to −35% vs "last week"). The first pre-registered version (order
+   at quantile r/(1+r), then round up) lost at ratios 2 and 4 on the
+   development stores; the amended rule was committed before store 45 was
+   touched. Caveat: at low ratios much of the saving is ordering *nothing*
+   (up to 64% of days), partly an artifact of no leftover carrying over —
+   the ratio ≥ 2 results are the ones that survive it. The UI defaults to
+   ratio 4 plus a "sold every day last week → at least 1 case" floor.
 
 Also in `DECISIONS.md`: a deliberate-leak test (one missing `shift(1)`
 would have faked a pass of the 15% target, +11.8% → +20.7%; the unit tests
@@ -65,7 +81,7 @@ model doesn't is unmeasurable in this data.
 ```text
 src/freshcall/   the system: order, gate, case_gate, features, model,
                  explain, containment, monitors, backtest, decomposition,
-                 harness, judge, redesign, ui_logic
+                 harness, judge, redesign, newsvendor, ui_logic
 tests/           pytest suite for every module above
 prepare_data.py  raw Kaggle CSVs -> derived files the pipeline reads
 make_demo_data.py  synthetic demo series (demo/), no Kaggle data needed
@@ -87,6 +103,7 @@ experiments/     every evaluation in DECISIONS.md, one script each:
   run_comparison_word_check.py    generator prompt change, before vs after
   run_redesign.py                 the redesign vs today (store 8 confirmation)
   run_time_sensitivity.py         manager minutes under 9 timing assumptions
+  run_newsvendor.py               cost-ratio ordering (store 45 confirmation)
   run_explanation_v2.py           same-weekday fact block, 3-question labels
   run_explanation_v3.py           deterministic sentence vs the LLM one
 config.yaml      all assumptions (case_pack, safety, gate threshold...)

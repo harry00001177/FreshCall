@@ -50,6 +50,7 @@ log every substantive step, including failed attempts.
 42. 2026-09-28 — Newsvendor, development stores (44, 8): the pre-registered rule loses at high ratios; cause found
 43. 2026-09-28 — AMENDED PRE-REGISTRATION: newsvendor order = lowest expected cost in whole cases
 44. 2026-09-28 — Newsvendor results: confirmed on store 45 (pre-registered SUCCESS), with a real-world caveat
+45. 2026-09-28 — Newsvendor order wired into the system and UI; routine_policy removed
 
 ---
 
@@ -1984,3 +1985,35 @@ when an extra case would mostly be wasted.
 
 **Cost:** no LLM calls. Compute: three 9-quantile store backtests, ~3.5
 min each on this laptop.
+
+---
+
+## 2026-09-28 — Newsvendor order wired into the system and UI; routine_policy removed
+
+**Decisions (Harry):** default `cost_ratio: 4` (running out hurts 4× more
+than wasting — QSR "never run out of a menu item" intuition; at 4 the
+0-case days stay near today's, 8.4% vs 6.2% on store 45); the
+"sold every day last week → at least 1 case" floor on by default
+(`min_one_case_floor`, costs 420.3 → 420.6 at ratio 4); `routine_policy`
+and `standing_order` removed — one setting now governs every SKU; routine
+SKUs stay collapsed in the UI.
+
+**Built:** `newsvendor.system_order` (order + floor) and
+`ui_logic.shown_range` — the shown range is stretched to include the order,
+because the newsvendor order can round below the cases P10 implies ("ORDER
+0 · likely 1–2" would contradict itself). `build_ui_cache.py` now also
+stores the 9 quantile forecasts (from `data/newsvendor_store44.parquet`) and
+the floor flag; the app recomputes the order live. The evaluation view has
+a cost-ratio slider (0.25 … 9, the tested values) and a floor checkbox for
+the demo; with "Show what actually sold" on, each line also shows the old
+P50 order when it differs.
+
+Checked in the browser (store 44, 16 May): at ratio 4 the top lines order
+18 and 14 cases; sliding to 1 changes them to 14 and 12 and the input
+boxes follow (widget keys include the ratio). 152/152 tests.
+
+**Noticed, not fixed:** the reason sentence ("Tuesdays have averaged 24.5
+units…") comes from sales history, not from the model, so it can sit next
+to an order below that average (item 1489880: ORDER 1 case beside an
+average of 24.5). It was already possible with the P50 order; the
+newsvendor order makes it more frequent.

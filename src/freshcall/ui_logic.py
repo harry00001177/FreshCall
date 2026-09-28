@@ -62,6 +62,13 @@ def range_text(lo: int, hi: int, max_width: int = 4) -> str:
     return f"likely {lo}–{hi}" if hi - lo <= max_width else WIDE_RANGE_TEXT
 
 
+def shown_range(lo: int, order: int, hi: int) -> tuple[int, int]:
+    """The P10/P90 case range, stretched to include the order: the
+    newsvendor order can round below the cases P10 implies (DECISIONS.md
+    2026-09-28), and "ORDER 0 · likely 1–2" would contradict itself."""
+    return min(lo, order), max(hi, order)
+
+
 def widest_first(rows: pd.DataFrame) -> pd.DataFrame:
     """Widest case range first (ties: widest P10–P90 in units) — on stores 44/8
     the widest quarter held ~45% of wrong orders, so the top of the list is
