@@ -58,6 +58,7 @@ log every substantive step, including failed attempts.
 50. 2026-09-28 — UI: slim expandable rows
 51. 2026-09-28 — UI labels: designs named v1 / v2 / v3; short cost-ratio note
 52. 2026-10-01 — UI for the video: store choice, Data tab, clearer summary line
+53. 2026-10-01 — Repo tidy: pipeline scripts moved to scripts/
 
 ---
 
@@ -2147,3 +2148,18 @@ slightly from the earlier 3-model run), and writes
 sold on ≥ 70% of days → 13,218 with a first sale by 2015-06-01; stores 44
 / 49 / 8 / 45 keep 426 / 436 / 433 / 428. The order log gains a `store`
 column (an older log without it is kept aside). Checked in the browser.
+
+---
+
+## 2026-10-01 — Repo tidy: pipeline scripts moved to scripts/
+
+**Decision (Harry):** keep the repo root to the app, docs and config. Moved
+`prepare_data.py`, `make_demo_data.py`, `run_slice.py`, `run_backtest.py`
+and `build_ui_cache.py` into `scripts/`; experiments now run with
+`PYTHONPATH=src:scripts:experiments`. Found on the way: pytest had been
+collecting `experiments/run_leak_test.py` (its name ends in `_test.py`) as
+a test file, which only worked because the old layout happened to make its
+imports resolve; `pytest.ini` now sets `testpaths = tests` (same 156
+tests). Re-ran after the move: tests, `run_slice.py` (demo and real),
+`build_ui_cache.py`, `run_redesign.py` (store 8 SUCCESS reproduced) and
+`run_newsvendor.py evaluate 45` (SUCCESS reproduced).

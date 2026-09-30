@@ -6,7 +6,7 @@ range first; routine SKUs are collapsed standing orders. Every line is editable
 and "Place order" logs confirmed / changed. No confidence figure appears.
 The sidebar's history view shows the earlier designs (v1 / v2, which
 handed uncertain SKUs back as ASK ME) for comparison. Reads
-data/ui_cache.parquet (build_ui_cache.py); calls no model and no LLM.
+data/ui_cache.parquet (scripts/build_ui_cache.py); calls no model and no LLM.
 Run: streamlit run app.py"""
 
 import json
@@ -36,7 +36,7 @@ DESIGNS = {
 st.set_page_config(page_title="FreshCall", layout="centered")
 
 if not CACHE.exists():
-    st.error("No UI data yet. Run `PYTHONPATH=src python build_ui_cache.py` first.")
+    st.error("No UI data yet. Run `PYTHONPATH=src python scripts/build_ui_cache.py` first.")
     st.stop()
 
 cfg = yaml.safe_load(open(ROOT / "config.yaml"))
@@ -47,7 +47,7 @@ STORE_ROLES = {45: "confirmation store — newsvendor (cost-ratio) order",
                8: "confirmation store — v3 order + likely range",
                44: "development store — every design was tuned here"}
 RATIOS = [0.25, 0.5, 1, 2, 4, 9]  # the cost ratios tested on stores 44 / 8 / 45
-QCOLS = [f"q{round(q * 100)}" for q in QUANTILES]  # as build_ui_cache.py names them
+QCOLS = [f"q{round(q * 100)}" for q in QUANTILES]  # as scripts/build_ui_cache.py names them
 
 with st.sidebar:
     store = st.selectbox("Store", list(STORE_ROLES), format_func=lambda s: f"Store {s}")
@@ -231,8 +231,8 @@ with tab_data:
     summary = json.load(open(SUMMARY))
     st.markdown("**Source:** Corporación Favorita Grocery Sales Forecasting (Kaggle) — a supermarket chain in "
                 "Ecuador, 2013–2017, 125,497,040 daily sales rows. Raw files aren't redistributed "
-                "(competition rules); `prepare_data.py` rebuilds everything below from them.")
-    st.markdown("**How the items were chosen** (`prepare_data.py`) — each step keeps what can be ordered and "
+                "(competition rules); `scripts/prepare_data.py` rebuilds everything below from them.")
+    st.markdown("**How the items were chosen** (`scripts/prepare_data.py`) — each step keeps what can be ordered and "
                 "forecast honestly:")
     st.dataframe(pd.DataFrame(summary["funnel"], columns=["Step", "What's left", "Why"]),
                  hide_index=True, use_container_width=True)

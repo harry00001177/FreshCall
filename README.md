@@ -90,12 +90,13 @@ src/freshcall/   the system: order, gate, case_gate, features, model,
                  explain, containment, monitors, backtest, decomposition,
                  harness, judge, redesign, newsvendor, ui_logic
 tests/           pytest suite for every module above
-prepare_data.py  raw Kaggle CSVs -> derived files the pipeline reads
-make_demo_data.py  synthetic demo series (demo/), no Kaggle data needed
-run_slice.py     one SKU, end to end (Problem Statement Section 8)
+scripts/         pipeline entry points:
+  prepare_data.py    raw Kaggle CSVs -> derived files the pipeline reads
+  make_demo_data.py  synthetic demo series (demo/), no Kaggle data needed
+  run_slice.py       one SKU, end to end (Problem Statement Section 8)
+  build_ui_cache.py  pre-generates what the UI shows
+  run_backtest.py    multi-SKU, 3-fold rolling-origin backtest
 app.py           the manager's one-page UI (Streamlit)
-build_ui_cache.py  pre-generates what the UI shows
-run_backtest.py  multi-SKU, 3-fold rolling-origin backtest
 experiments/     every evaluation in DECISIONS.md, one script each:
   report_backtest.py              pre-registered tables from a backtest
   run_case_gate_experiment.py     case-straddle gate, store 49 confirmation
@@ -123,8 +124,8 @@ docs/            problem statement (v2 as submitted, v3 current),
 
 ```bash
 pip install -r requirements.txt
-python make_demo_data.py
-PYTHONPATH=src python run_slice.py --demo
+python scripts/make_demo_data.py
+PYTHONPATH=src python scripts/run_slice.py --demo
 ```
 
 Runs the full predict → gate → order → explain path on a small synthetic
@@ -134,7 +135,7 @@ result.
 ## Manager UI
 
 ```bash
-PYTHONPATH=src python build_ui_cache.py   # once; needs the Kaggle data
+PYTHONPATH=src python scripts/build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
 ```
 
@@ -179,10 +180,10 @@ on the competition page, and an API token (Kaggle CLI 2.x reads
 ```bash
 kaggle competitions download -c favorita-grocery-sales-forecasting -p data
 cd data && unzip favorita-grocery-sales-forecasting.zip && for f in *.7z; do 7z x -y "$f"; done && cd ..
-python prepare_data.py
+python scripts/prepare_data.py
 ```
 
-`7z` comes from `brew install p7zip`. `prepare_data.py` takes a few
+`7z` comes from `brew install p7zip`. `scripts/prepare_data.py` takes a few
 minutes (it scans the ~5 GB `train.csv`).
 
 ## Run
@@ -191,14 +192,14 @@ From the repository root:
 
 ```bash
 python -m pytest
-PYTHONPATH=src python run_slice.py
-PYTHONPATH=src python run_backtest.py data/full_426_skus.parquet
+PYTHONPATH=src python scripts/run_slice.py
+PYTHONPATH=src python scripts/run_backtest.py data/full_426_skus.parquet
 ```
 
 Experiments (they import each other, hence the longer path):
 
 ```bash
-export PYTHONPATH=src:.:experiments
+export PYTHONPATH=src:scripts:experiments
 python experiments/report_backtest.py data/backtest_results.parquet
 python experiments/run_case_gate_experiment.py
 python experiments/run_error_decomposition.py

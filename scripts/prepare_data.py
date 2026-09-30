@@ -4,7 +4,7 @@ CSVs in data/. Filter chain (Problem Statement §3.2, DECISIONS.md
 density >= 0.7 within each SKU's own active span -> first sale on or
 before 2015-06-01 (enough history for all 3 rolling-origin folds).
 
-Usage: python prepare_data.py [out_dir]   (default: data)"""
+Usage: python scripts/prepare_data.py [out_dir]   (default: data)"""
 
 import os
 import sys
