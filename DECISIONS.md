@@ -57,6 +57,7 @@ log every substantive step, including failed attempts.
 49. 2026-09-28 — Working notes moved out of the repo; history cleaned
 50. 2026-09-28 — UI: slim expandable rows
 51. 2026-09-28 — UI labels: designs named v1 / v2 / v3; short cost-ratio note
+52. 2026-10-01 — UI for the video: store choice, Data tab, clearer summary line
 
 ---
 
@@ -2121,3 +2122,28 @@ rel_width + ASK ME" (v3 = the order + range redesign with the newsvendor
 order). The cost-ratio slider is labelled "Cost ratio" with one line
 under it: "How much worse running out is than wasting. Slide right to
 order more, left to order less." Wording only; checked in the browser.
+
+---
+
+## 2026-10-01 — UI for the video: store choice, Data tab, clearer summary line
+
+**Decisions (Harry):** (1) the summary line read "31 to review", which
+looked like *more* work than v2's ASK ME (25–30 of 40 on the UI dates) —
+but a v3 line already carries an order to glance at, while an ASK ME line
+has no number at all; on store 44 the no-hand-back policy had 13.1 wrong
+orders and ~3.3 minutes per 40-SKU night vs 15.2 and ~47.5 for the v2 gate
+(minutes are assumptions; 2026-09-25 entry). Now reads "40 orders ready ·
+31 worth a glance …". (2) Store choice: 45 (newsvendor confirmation,
+default), 8 (v3 confirmation), 44 (development). (3) A Data tab: source,
+the filter funnel with the reason for each step, each store's role, raw
+rows.
+
+**Built:** `build_ui_cache.py` now builds 40 SKUs × 7 dates for stores 44,
+8 and 45 from the 9-quantile backtests (q0.1 / q0.5 / q0.9 give the range
+and the history gates for every store, so store 44's ranges can differ
+slightly from the earlier 3-model run), and writes
+`data/ui_data_summary.json`. Funnel (run): 4,100 items → 986 perishable
+(31,702,536 rows) → 707 sold in whole units → 18,586 store-item pairs
+sold on ≥ 70% of days → 13,218 with a first sale by 2015-06-01; stores 44
+/ 49 / 8 / 45 keep 426 / 436 / 433 / 428. The order log gains a `store`
+column (an older log without it is kept aside). Checked in the browser.

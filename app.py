@@ -9,6 +9,7 @@ handed uncertain SKUs back as ASK ME) for comparison. Reads
 data/ui_cache.parquet (build_ui_cache.py); calls no model and no LLM.
 Run: streamlit run app.py"""
 
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -41,11 +42,17 @@ if not CACHE.exists():
 cfg = yaml.safe_load(open(ROOT / "config.yaml"))
 cp = cfg["case_pack"]
 cache = pd.read_parquet(CACHE)
-dates = sorted(cache["date"].unique())
+SUMMARY = ROOT / "data/ui_data_summary.json"
+STORE_ROLES = {45: "confirmation store — newsvendor (cost-ratio) order",
+               8: "confirmation store — v3 order + likely range",
+               44: "development store — every design was tuned here"}
 RATIOS = [0.25, 0.5, 1, 2, 4, 9]  # the cost ratios tested on stores 44 / 8 / 45
 QCOLS = [f"q{round(q * 100)}" for q in QUANTILES]  # as build_ui_cache.py names them
 
 with st.sidebar:
+    store = st.selectbox("Store", list(STORE_ROLES), format_func=lambda s: f"Store {s}")
+    st.caption(STORE_ROLES[store].capitalize())
+    dates = sorted(cache.loc[cache["store"] == store, "date"].unique())
     date = st.selectbox("Order for", dates, format_func=lambda d: pd.Timestamp(d).strftime("%a %d %b %Y"))
     st.divider()
     st.caption("Evaluation view — for the demo, not part of the manager's screen")
@@ -56,7 +63,7 @@ with st.sidebar:
     st.caption("How much worse running out is than wasting. Slide right to order more, left to order less.")
     use_floor = st.checkbox("Sold every day last week → at least 1 case", value=cfg["min_one_case_floor"])
 
-day = cache[cache["date"] == date].copy()
+day = cache[(cache["store"] == store) & (cache["date"] == date)].copy()
 day["name"] = day["family"].str.title() + " · item " + day["item_nbr"].astype(str)
 day["shown"] = [system_order([getattr(r, c) for c in QCOLS], ratio, cp, use_floor and r.floor)
                 for r in day.itertuples()]
@@ -159,25 +166,26 @@ def order_card(row, cases: int, with_range: bool, key: str) -> dict:
 
 
 st.title("FreshCall")
-st.caption(f"Tomorrow's fresh order · Store 44 · {pd.Timestamp(date).strftime('%A %d %B %Y')} · "
+st.caption(f"Tomorrow's fresh order · Store {store} · {pd.Timestamp(date).strftime('%A %d %B %Y')} · "
            f"ordered for a store where running out costs {ratio:g}× wasting")
 
+tab_order, tab_data = st.tabs(["Tomorrow's order", "Data"])
 entries = []
-with st.form("order"):
+with tab_order, st.form("order"):
     if design == "redesign":
         look, routine = widest_first(day[~day["routine"]]), day[day["routine"]].sort_values("name")
         st.markdown(ROW_CSS, unsafe_allow_html=True)
-        st.caption(f"{len(look)} to review · {len(routine)} standing orders · widest likely range first — "
-                   "the lines where what you know about tomorrow matters most")
+        st.caption(f"{len(day)} orders ready · {len(look)} worth a glance, widest likely range first — "
+                   f"where what you know about tomorrow matters most · {len(routine)} standing orders")
         st.markdown('<div class="fc-head"><span style="flex:5">Item</span><span style="flex:4">Likely range '
                     '(cases) · dot = order</span><span style="flex:3">Order (cases)</span></div>',
                     unsafe_allow_html=True)
         for row in look.itertuples():
-            entries.append(compact_row(row, row.shown, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
+            entries.append(compact_row(row, row.shown, f"{store}-{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}"))
         with st.expander(f"Standing orders · {len(routine)} items — every day of the last 4 weeks fit in one case"):
             st.markdown('<span class="fc-standing"></span>', unsafe_allow_html=True)
             for row in routine.itertuples():
-                entries.append(compact_row(row, row.shown, f"{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}",
+                entries.append(compact_row(row, row.shown, f"{store}-{date}-{design}-{ratio}-{use_floor}-{row.item_nbr}",
                                            with_range=False))
     else:
         day["abstain"] = day[f"abstain_{design}"]
@@ -197,21 +205,48 @@ with st.form("order"):
                 if show_outcome:
                     left.caption(outcome_note(row))
                 value = right.number_input("Cases", min_value=0, step=1, value=None,
-                                           key=f"{date}-{design}-{row.item_nbr}")
+                                           key=f"{store}-{date}-{design}-{row.item_nbr}")
             entries.append({"item_nbr": row.item_nbr, "system_cases": None, "manager_cases": value})
         for row in ready.itertuples():
-            entries.append(order_card(row, row.order, False, f"{date}-{design}-{row.item_nbr}"))
+            entries.append(order_card(row, row.order, False, f"{store}-{date}-{design}-{row.item_nbr}"))
 
     submitted = st.form_submit_button("Place order", type="primary", use_container_width=True)
 
 if submitted:
     errors = validate_order(entries)
     if errors:
-        st.error("Not placed yet:\n\n" + "\n".join(f"- {e}" for e in errors))
+        tab_order.error("Not placed yet:\n\n" + "\n".join(f"- {e}" for e in errors))
     else:
-        records = log_records(pd.Timestamp(date).date().isoformat(), design, entries,
-                              submitted_at=datetime.now().isoformat(timespec="seconds"))
+        records = [{**r, "store": store} for r in log_records(
+            pd.Timestamp(date).date().isoformat(), design, entries,
+            submitted_at=datetime.now().isoformat(timespec="seconds"))]
+        if LOG.exists() and "store" not in LOG.open().readline():
+            LOG.rename(LOG.with_name("ui_orders_log_before_stores.csv"))  # older log had no store column
         pd.DataFrame(records).to_csv(LOG, mode="a", header=not LOG.exists(), index=False)
         counts = pd.Series([r["outcome"] for r in records]).value_counts()
-        st.success(f"Order placed: {counts.get('confirmed', 0)} confirmed, "
-                   f"{counts.get('overridden', 0)} changed, {counts.get('manager_call', 0)} set by you.")
+        tab_order.success(f"Order placed: {counts.get('confirmed', 0)} confirmed, "
+                          f"{counts.get('overridden', 0)} changed, {counts.get('manager_call', 0)} set by you.")
+
+with tab_data:
+    summary = json.load(open(SUMMARY))
+    st.markdown("**Source:** Corporación Favorita Grocery Sales Forecasting (Kaggle) — a supermarket chain in "
+                "Ecuador, 2013–2017, 125,497,040 daily sales rows. Raw files aren't redistributed "
+                "(competition rules); `prepare_data.py` rebuilds everything below from them.")
+    st.markdown("**How the items were chosen** (`prepare_data.py`) — each step keeps what can be ordered and "
+                "forecast honestly:")
+    st.dataframe(pd.DataFrame(summary["funnel"], columns=["Step", "What's left", "Why"]),
+                 hide_index=True, use_container_width=True)
+    st.markdown("**Stores and their roles.** Every design was developed on one store, then checked once on a "
+                "store never looked at before (pre-registered in `DECISIONS.md`).")
+    roles = [(44, "Development", "every design (v1, v2, v3, newsvendor) was built and tuned here"),
+             (49, "Confirmation", "v1 / v2 ASK ME gates (not shown in this app)"),
+             (8, "Confirmation", "v3: an order + likely range for every item"),
+             (45, "Confirmation", "newsvendor order at the store's cost ratio")]
+    st.dataframe(pd.DataFrame([(f"Store {s}", summary["per_store"][str(s)], r, u) for s, r, u in roles],
+                              columns=["Store", "Items kept", "Role", "Used for"]),
+                 hide_index=True, use_container_width=True)
+    st.markdown("**What the raw data looks like** (first rows for store 44 — one row per item per day with a sale):")
+    st.dataframe(pd.DataFrame(summary["sample"]), hide_index=True, use_container_width=True)
+    st.caption("Every result is recomputed by a script in `experiments/` (e.g. `run_redesign.py`, "
+               "`run_newsvendor.py`) and logged with its numbers in `DECISIONS.md`. This page shows 40 items "
+               "per store on 7 dates; the results use every item on every test day.")

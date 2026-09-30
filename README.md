@@ -138,7 +138,7 @@ PYTHONPATH=src python build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
 ```
 
-One page: tomorrow's order for 40 SKUs at store 44, as slim table-like
+One page: tomorrow's order for 40 SKUs at a chosen store — 45 or 8 (confirmation stores) or 44 (development) — as slim table-like
 rows — item (with a colour-coded category tag), a likely-range bar with a
 dot at the order, and an editable case count. Each row folds out to its
 details: "ORDER 3 cases (36 units) · likely 1–5", the one-line reason
@@ -150,7 +150,7 @@ or changed (`data/ui_orders_log.csv`). No confidence figure appears
 anywhere, and the page calls no model and no LLM. The sidebar's
 *evaluation view* (for demos, not managers) has a cost-ratio slider,
 switches between the designs — v3 (current) and the earlier ASK ME designs v1 and v2 — and can
-show what actually sold. Favorita has no item names (only number,
+show what actually sold. A **Data** tab shows where the data comes from, how items were chosen (the filter funnel, with why each step exists), which store played which role, and a few raw rows. Favorita has no item names (only number,
 category and class), so items are shown by category and number.
 
 ## Setup
