@@ -59,6 +59,7 @@ log every substantive step, including failed attempts.
 51. 2026-09-28 — UI labels: designs named v1 / v2 / v3; short cost-ratio note
 52. 2026-10-01 — UI for the video: store choice, Data tab, clearer summary line
 53. 2026-10-01 — Repo tidy: pipeline scripts moved to scripts/
+54. 2026-10-01 — Correction: hand-back timing in the real-value table
 
 ---
 
@@ -1419,6 +1420,8 @@ only proxy for human judgement this data allows.
 | `rel_width` 1.00 gate | 73% | 14.8 | 7.7 | 7.1 | 44.9 |
 | case-straddle gate | 78% | 15.2 | 7.9 | 7.3 | 47.5 |
 
+> **Corrected 2026-10-01:** the gate rows' minutes assume 90 s per handed-back SKU, which contradicts this table's own proxy (a handed-back SKU is ordered like today, costed at 30 s). At 30 s the case-straddle gate takes ~16.3 minutes, not 47.5 (range 11.1–24.1 for 20–45 s). Wrong-order counts are unaffected. See "Correction: hand-back timing" below.
+
 **Why the gates lose:** even on the SKU-days case-straddle hands back (the
 hard ones), the model is wrong less often than "last week" (39.6% vs
 46.5%; on the answered ones 7.9% vs 11.2%). Handing a SKU to someone who
@@ -2163,3 +2166,33 @@ imports resolve; `pytest.ini` now sets `testpaths = tests` (same 156
 tests). Re-ran after the move: tests, `run_slice.py` (demo and real),
 `build_ui_cache.py`, `run_redesign.py` (store 8 SUCCESS reproduced) and
 `run_newsvendor.py evaluate 45` (SUCCESS reproduced).
+
+---
+
+## 2026-10-01 — Correction: hand-back timing in the real-value table
+
+**Found by Harry** while reviewing the video script: the 2026-09-25
+real-value table priced a handed-back SKU at 90 s (a Problem Statement
+guess, never measured), yet the same table assumes a handed-back SKU is
+ordered the way managers do today — last week's number — which it prices
+at 30 s. The 90 s figure inflated the gates' time cost about threefold.
+
+**Recomputed** (`experiments/run_time_sensitivity.py`, second table; store
+44, case-straddle gate hands back 77.9% of 39,192 SKU-days; minutes per
+40-SKU night, all timings assumptions):
+
+| handed-back SKU | v2 gate minutes |
+|---|---|
+| 20 s | 11.1 |
+| **30 s (consistent with "today")** | **16.3** |
+| 45 s | 24.1 |
+| 90 s (original) | 47.5 |
+
+For comparison: today 20.0 (30 s each); no hand-back 3.3 (5 s each).
+
+**What changes:** the headline time cost of v2 is ~16 minutes, not ~47.
+**What doesn't:** at any of these timings the gate takes 3–7× longer than
+letting the model answer everything, and its wrong orders (15.2 vs 13.1
+per night, measured) don't depend on timing at all — the decision to drop
+the gate stands. The original table is kept with a correction note so the
+record shows what was believed and when.
