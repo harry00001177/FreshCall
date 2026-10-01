@@ -60,6 +60,7 @@ log every substantive step, including failed attempts.
 52. 2026-10-01 — UI for the video: store choice, Data tab, clearer summary line
 53. 2026-10-01 — Repo tidy: pipeline scripts moved to scripts/
 54. 2026-10-01 — Correction: hand-back timing in the real-value table
+55. 2026-10-01 — Results tab: the video's three claims as charts
 
 ---
 
@@ -2196,3 +2197,29 @@ letting the model answer everything, and its wrong orders (15.2 vs 13.1
 per night, measured) don't depend on timing at all — the decision to drop
 the gate stands. The original table is kept with a correction note so the
 record shows what was believed and when.
+
+---
+
+## 2026-10-01 — Results tab: the video's three claims as charts
+
+**Decision (Harry):** numbers read aloud are hard to follow, so the app
+gets a Results tab with one chart per claim, computed from the stored
+predictions rather than typed in. `scripts/build_ui_cache.py` writes
+`data/ui_results.json` using the experiment scripts' own functions
+(`run_redesign.prepare` / `per_night`, `run_newsvendor.add_orders` /
+`cost_per_night`), over every SKU and test day:
+
+1. store 44 — wrong orders 15.5 (last week) / 15.2 (v2) / 13.1 (model
+   answers all) and minutes 20.0 / 16.3 / 3.3 (30 s per handed-back
+   item; 2026-10-01 correction);
+2. store 8 — non-routine wrong 13.3 → 10.3, wasted 282.3 → 250.1, short
+   41.7 → 31.0; routine wrong 6.1 → 4.4, wasted 243.5 → 281.0, short
+   9.4 → 1.3;
+3. store 45 — cost per night by ratio for last week, the old P50 order and
+   the newsvendor order; ratios below 2 drawn faded (not quoted).
+
+All match the logged results. Charts follow the dataviz method: one colour
+per policy across all charts (palette validated in light and dark — passes;
+aqua is below 3:1 on light, so every bar carries a value label and there is
+a table view), two separate charts instead of a dual axis, hover tooltips.
+Checked in the browser.

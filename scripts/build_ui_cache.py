@@ -4,9 +4,11 @@ for stores 44 (development), 8 and 45 (confirmation stores), 40 SKUs each
 Forecasts come from the stored 9-quantile backtests (no refit): q0.1 / q0.5 /
 q0.9 give the range and the history view's gates; all 9 give the newsvendor
 order, recomputed live in the app for any cost ratio. Also writes the Data
-page's summary (filter funnel, a few raw rows). No LLM call: the order
+page's summary (filter funnel, a few raw rows) and the Results page's chart
+data, computed with the experiment scripts' own functions (run with
+PYTHONPATH=src:experiments). No LLM call: the order
 sentence is a deterministic template rendered by the app.
-Output: data/ui_cache.parquet, data/ui_data_summary.json."""
+Output: data/ui_cache.parquet, data/ui_data_summary.json, data/ui_results.json."""
 
 import json
 
@@ -17,14 +19,14 @@ from freshcall.case_gate import straddles_case_boundary
 from freshcall.features import build_daily_grid, same_weekday_avg
 from freshcall.gate import should_abstain
 from freshcall.newsvendor import QUANTILES, floor_applies
-from freshcall.order import naive_seasonal_order
+from freshcall.order import naive_seasonal_order, recommended_cases
 from freshcall.redesign import case_range, is_routine, past_max
 from freshcall.ui_logic import select_ui_skus, ui_dates
 from prepare_data import DENSITY_THRESHOLD, FIRST_SALE_CUTOFF, density_table, whole_unit_items
 
 STORES = {44: "data/full_426_skus.parquet", 8: "data/store8_candidates.parquet",
           45: "data/store45_candidates.parquet"}
-OUT, SUMMARY = "data/ui_cache.parquet", "data/ui_data_summary.json"
+OUT, SUMMARY, RESULTS = "data/ui_cache.parquet", "data/ui_data_summary.json", "data/ui_results.json"
 FIRST_TEST_DAY, LAST_TEST_DAY = "2017-05-16", "2017-08-15"
 QCOLS = [f"q{round(q * 100)}" for q in QUANTILES]  # q10 ... q90 (itertuples needs identifiers)
 
@@ -89,6 +91,47 @@ def data_summary(sales: pd.DataFrame, items: pd.DataFrame) -> dict:
     }
 
 
+def results(cfg: dict, sales: pd.DataFrame) -> dict:
+    """Chart data for the Results page, per 40-SKU night, from the stored
+    predictions — the same functions the logged results came from."""
+    from run_newsvendor import RATIOS, add_orders, cost_per_night
+    from run_redesign import per_night, prepare
+    cp, safety, on_hand = cfg["case_pack"], cfg["safety"], cfg["on_hand"]
+
+    # 1. Store 44 (development): hand back (v2) vs answer everything (DECISIONS.md 2026-09-25, 2026-10-01)
+    df = pd.read_parquet("data/backtest_results.parquet")
+    model = pd.Series([recommended_cases(p, safety, on_hand, cp) for p in df["p50"]])
+    gate = pd.Series([straddles_case_boundary(a, b, c, safety, on_hand, cp)
+                      for a, b, c in zip(df["p10"], df["p50"], df["p90"])])
+    share = gate.mean()
+    wrong = lambda col: round(float((col.values != df["hindsight"].values).mean() * 40), 1)
+    minutes = lambda handed_back_s: round(40 * (share * handed_back_s + (1 - share) * 5) / 60, 1)
+    handback = [
+        {"policy": "Last week (today)", "wrong": wrong(df["naive"]), "minutes": 20.0, "note": "30 s per item"},
+        {"policy": "v2: ASK ME gate", "wrong": wrong(model.where(~gate, df["naive"])), "minutes": minutes(30),
+         "note": f"hands back {share:.0%}; 30 s each ({minutes(20)}–{minutes(45)} min for 20–45 s)"},
+        {"policy": "Model answers all", "wrong": wrong(model), "minutes": round(40 * 5 / 60, 1),
+         "note": "5 s per item"},
+    ]
+
+    # 2. Store 8 (confirmation): v3 vs last week (DECISIONS.md 2026-09-25)
+    d8 = prepare(8, "data/backtest_results_store8.parquet", cfg, sales)
+    redesign = []
+    for subset, part in (("Items that need judgement", d8[~d8["routine"]]), ("Slow routine items", d8[d8["routine"]])):
+        for who, label in (("today", "Last week (today)"), ("redesign", "v3: order + range")):
+            m = per_night(part, who)
+            redesign.append({"subset": subset, "policy": label, "wrong": round(m["wrong"], 1),
+                             "over": round(m["over"], 1), "short": round(m["short"], 1)})
+
+    # 3. Store 45 (confirmation): cost per night by cost ratio (DECISIONS.md 2026-09-28)
+    d45 = add_orders(pd.read_parquet("data/newsvendor_store45.parquet"), 45, cfg, sales)
+    newsvendor = [{"ratio": r, "policy": label, "cost": round(cost_per_night(d45, col, r), 1)}
+                  for r in RATIOS for col, label in (("last_week", "Last week (today)"),
+                                                     ("p50", "Old order (P50, rounded up)"),
+                                                     (f"nv{r}", "Newsvendor order"))]
+    return {"handback": handback, "redesign": redesign, "newsvendor": newsvendor}
+
+
 def main():
     cfg = yaml.safe_load(open("config.yaml"))
     sales = pd.read_parquet("data/derived_perishable_train.parquet")
@@ -98,10 +141,11 @@ def main():
     df = pd.DataFrame(rows).sort_values(["store", "date", "item_nbr"])
     df.to_parquet(OUT, index=False)
     json.dump(data_summary(sales, items), open(SUMMARY, "w"), indent=1)
+    json.dump(results(cfg, sales), open(RESULTS, "w"), indent=1)
     for store, g in df.groupby("store"):
         print(f"store {store}: {len(g)} rows ({g['item_nbr'].nunique()} SKUs x {g['date'].nunique()} dates), "
               f"routine {g['routine'].mean():.1%}")
-    print(f"-> {OUT}, {SUMMARY}")
+    print(f"-> {OUT}, {SUMMARY}, {RESULTS}")
 
 
 if __name__ == "__main__":

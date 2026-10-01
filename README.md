@@ -135,7 +135,7 @@ result.
 ## Manager UI
 
 ```bash
-PYTHONPATH=src python scripts/build_ui_cache.py   # once; needs the Kaggle data
+PYTHONPATH=src:experiments python scripts/build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
 ```
 
@@ -151,7 +151,7 @@ or changed (`data/ui_orders_log.csv`). No confidence figure appears
 anywhere, and the page calls no model and no LLM. The sidebar's
 *evaluation view* (for demos, not managers) has a cost-ratio slider,
 switches between the designs — v3 (current) and the earlier ASK ME designs v1 and v2 — and can
-show what actually sold. A **Data** tab shows where the data comes from, how items were chosen (the filter funnel, with why each step exists), which store played which role, and a few raw rows. Favorita has no item names (only number,
+show what actually sold. A **Data** tab shows where the data comes from, how items were chosen (the filter funnel, with why each step exists), which store played which role, and a few raw rows. A **Results** tab charts the three claims behind the design — handing items back (store 44), v3 on an unseen store (8), and ordering for the store's costs (45) — computed by the experiment scripts' own functions from every test day, with a table view. Favorita has no item names (only number,
 category and class), so items are shown by category and number.
 
 ## Setup

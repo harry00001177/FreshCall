@@ -14,6 +14,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 import yaml
@@ -36,13 +37,14 @@ DESIGNS = {
 st.set_page_config(page_title="FreshCall", layout="centered")
 
 if not CACHE.exists():
-    st.error("No UI data yet. Run `PYTHONPATH=src python scripts/build_ui_cache.py` first.")
+    st.error("No UI data yet. Run `PYTHONPATH=src:experiments python scripts/build_ui_cache.py` first.")
     st.stop()
 
 cfg = yaml.safe_load(open(ROOT / "config.yaml"))
 cp = cfg["case_pack"]
 cache = pd.read_parquet(CACHE)
 SUMMARY = ROOT / "data/ui_data_summary.json"
+RESULTS = ROOT / "data/ui_results.json"
 STORE_ROLES = {45: "confirmation store — newsvendor (cost-ratio) order",
                8: "confirmation store — v3 order + likely range",
                44: "development store — every design was tuned here"}
@@ -169,7 +171,7 @@ st.title("FreshCall")
 st.caption(f"Tomorrow's fresh order · Store {store} · {pd.Timestamp(date).strftime('%A %d %B %Y')} · "
            f"ordered for a store where running out costs {ratio:g}× wasting")
 
-tab_order, tab_data = st.tabs(["Tomorrow's order", "Data"])
+tab_order, tab_data, tab_results = st.tabs(["Tomorrow's order", "Data", "Results"])
 entries = []
 with tab_order, st.form("order"):
     if design == "redesign":
@@ -250,3 +252,74 @@ with tab_data:
     st.caption("Every result is recomputed by a script in `experiments/` (e.g. `run_redesign.py`, "
                "`run_newsvendor.py`) and logged with its numbers in `DECISIONS.md`. This page shows 40 items "
                "per store on 7 dates; the results use every item on every test day.")
+
+
+# --- Results: charts behind the video's claims, computed by scripts/build_ui_cache.py ----------------
+# One colour per ordering policy across every chart (validated palette; dark steps unless theme is light).
+LIGHT = {"Last week (today)": "#8a8984", "v2: ASK ME gate": "#eb6834", "Model answers all": "#2a78d6",
+         "v3: order + range": "#2a78d6", "Newsvendor order": "#2a78d6", "Old order (P50, rounded up)": "#1baf7a"}
+DARK = {"Last week (today)": "#8a8984", "v2: ASK ME gate": "#d95926", "Model answers all": "#3987e5",
+        "v3: order + range": "#3987e5", "Newsvendor order": "#3987e5", "Old order (P50, rounded up)": "#199e70"}
+PALETTE = LIGHT if st.get_option("theme.base") == "light" else DARK
+
+
+def bars(df: pd.DataFrame, value: str, title: str, order: list[str]) -> alt.Chart:
+    """Horizontal bars, one per policy, value label at the bar end, tooltip on hover."""
+    scale = alt.Scale(domain=order, range=[PALETTE[p] for p in order])
+    base = alt.Chart(df, title=title, height=alt.Step(30)).encode(
+        y=alt.Y("policy:N", sort=order, title=None),
+        x=alt.X(f"{value}:Q", title=None, scale=alt.Scale(domain=[0, float(df[value].max()) * 1.25]),
+                axis=alt.Axis(grid=False, labels=False, ticks=False, domain=False)),
+        tooltip=list(df.columns))
+    return (base.mark_bar(cornerRadiusEnd=4, height=16).encode(color=alt.Color("policy:N", scale=scale, legend=None))
+            + base.mark_text(align="left", dx=4).encode(text=alt.Text(f"{value}:Q", format=".1f")))
+
+
+with tab_results:
+    res = json.load(open(RESULTS))
+    st.caption("Per 40-item night, from the saved backtest predictions (every item, every test day — not just "
+               "the 40 shown on the order page). Minutes are assumptions; everything else is measured.")
+
+    st.markdown("**1 · Handing items back made orders worse and slower** — store 44 (development)")
+    hb = pd.DataFrame(res["handback"])
+    hb_order = list(hb["policy"])
+    c1, c2 = st.columns(2)
+    c1.altair_chart(bars(hb, "wrong", "Wrong orders", hb_order), use_container_width=True)
+    c2.altair_chart(bars(hb, "minutes", "Manager minutes (assumed)", hb_order), use_container_width=True)
+    st.caption(f"v2 {hb.loc[1, 'note']}. Today and a handed-back item are both priced at 30 s.")
+
+    st.markdown("**2 · v3 on a store never seen before** — store 8 (confirmation)")
+    rd = pd.DataFrame(res["redesign"])
+    rd_order = ["Last week (today)", "v3: order + range"]
+    for subset in ("Items that need judgement", "Slow routine items"):
+        part = rd[rd["subset"] == subset]
+        st.markdown(f"*{subset}*")
+        cols = st.columns(3)
+        for col, (value, label) in zip(cols, (("wrong", "Wrong orders"), ("over", "Units wasted"),
+                                              ("short", "Units short"))):
+            col.altair_chart(bars(part, value, label, rd_order), use_container_width=True)
+    st.caption("Assumes the manager accepts every suggestion. On slow routine items v3 wastes more units than "
+               "last week while cutting shortages — the trade-off the cost ratio prices.")
+
+    st.markdown("**3 · Ordering for the store's costs** — store 45 (confirmation)")
+    nv = pd.DataFrame(res["newsvendor"])
+    nv_order = ["Last week (today)", "Old order (P50, rounded up)", "Newsvendor order"]
+    nv["quoted"] = nv["ratio"] >= 2
+    nv["ratio_label"] = nv["ratio"].map(lambda r: f"{r:g}")
+    scale = alt.Scale(domain=nv_order, range=[PALETTE[p] for p in nv_order])
+    chart = alt.Chart(nv, height=260).mark_bar(cornerRadiusEnd=4).encode(
+        x=alt.X("ratio_label:N", sort=[f"{r:g}" for r in sorted(nv["ratio"].unique())],
+                title="Cost ratio — one unit short costs … × one unit wasted", axis=alt.Axis(labelAngle=0)),
+        xOffset=alt.XOffset("policy:N", sort=nv_order),
+        y=alt.Y("cost:Q", title="Cost per night (lower is better)", axis=alt.Axis(gridOpacity=0.15)),
+        color=alt.Color("policy:N", scale=scale, sort=nv_order, legend=alt.Legend(orient="top", title=None, labelLimit=0)),
+        opacity=alt.condition("datum.quoted", alt.value(1.0), alt.value(0.35)),
+        tooltip=["ratio", "policy", "cost"])
+    st.altair_chart(chart, use_container_width=True)
+    st.caption("Faded: ratios below 2, where most of the saving comes from ordering nothing (partly because this "
+               "data has no stock carried between days) — not quoted.")
+
+    with st.expander("Table view of all three charts"):
+        st.dataframe(hb, hide_index=True, use_container_width=True)
+        st.dataframe(rd, hide_index=True, use_container_width=True)
+        st.dataframe(nv.pivot(index="ratio", columns="policy", values="cost")[nv_order], use_container_width=True)
