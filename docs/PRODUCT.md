@@ -76,38 +76,44 @@ The manager's screen makes no LLM call and shows no confidence score.
 ## Architecture
 
 ```mermaid
-flowchart LR
-    subgraph IN["Input"]
-        S["Daily sales history<br/>(store x item x day)"]
-        C["Store settings<br/>case pack, cost ratio, floor"]
+flowchart TB
+    S["Daily sales history<br/>store x item x day"]
+    C["Store settings<br/>case pack, cost ratio, floor"]
+
+    subgraph CORE["FreshCall core: built, deterministic Python"]
+        direction TB
+        F["Features: full daily grid, weekday,<br/>lag-1, lag-7, 7-day mean, all shifted one day"]
+        M["Narrow ML: 9 quantile GBR models<br/>P10 ... P90 of tomorrow's units"]
+        N["Newsvendor order: whole cases with the lowest<br/>expected cost at the cost ratio, plus floor"]
+        R["Likely range: P10-P90 in cases,<br/>stretched to include the order"]
+        T["Reason template: same-weekday<br/>average vs last week, fixed wording"]
+        F --> M
+        M --> N
+        M --> R
     end
 
-    subgraph CORE["FreshCall core (built, deterministic Python)"]
-        F["Features<br/>full daily grid, weekday,<br/>lag-1, lag-7, 7-day mean<br/>(all shifted one day)"]
-        M["Narrow ML<br/>9 quantile GBR models<br/>P10 ... P90 of tomorrow's units"]
-        N["Newsvendor order<br/>whole cases with lowest<br/>expected cost at the cost ratio<br/>+ minimum-order floor"]
-        R["Likely range<br/>P10-P90 in cases,<br/>stretched to include the order"]
-        T["Reason template<br/>same-weekday average vs<br/>last week, fixed wording"]
-    end
-
-    subgraph UI["Manager's screen (Streamlit)"]
-        O["One line per item:<br/>order, range, reason<br/>widest range first"]
-        H["Manager confirms<br/>or changes each line"]
+    subgraph UI["Manager's screen: Streamlit, no LLM call"]
+        direction TB
+        O["One line per item: order, range, reason,<br/>widest range first"]
+        H["Manager confirms or changes each line"]
         L["Order log"]
+        O --> H --> L
     end
 
-    subgraph EVAL["Offline evaluation only (never on the manager's screen)"]
+    subgraph EVAL["Offline evaluation only"]
+        direction TB
         B["Rolling-origin backtest<br/>3 folds, 4 stores"]
-        J["LLM judge (rented)<br/>Claude Haiku via OpenRouter<br/>checked against human labels"]
+        J["LLM judge, rented: Claude Haiku 4.5<br/>via OpenRouter, checked against human labels"]
     end
 
-    S --> F --> M --> N --> O
+    S --> F
+    S --> T
     C --> N
-    M --> R --> O
-    S --> T --> O
-    O --> H --> L
-    M -. predictions .-> B
-    T -. sentences .-> J
+    N --> O
+    R --> O
+    T --> O
+    M -.-> B
+    T -.-> J
 ```
 
 **External components (rented or reused).**
