@@ -2366,6 +2366,5 @@ the two Problem Statements, the labelling notes and document metadata.
 
 **Re-run after the fixes** (pinned environment): 156 tests pass; store 45
 and store 8 re-scores SUCCESS; quick demo passes; app opens with no
-exception and shows the new Data-tab text. The demo video still shows the
-old Data-tab sentence; the video is not re-edited.
+exception and shows the new Data-tab text.
 
