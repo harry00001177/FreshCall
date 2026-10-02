@@ -1,0 +1,79 @@
+{
+ "funnel": [
+  [
+   "All items in the catalogue",
+   "4,100 items",
+   "items.csv"
+  ],
+  [
+   "Perishable",
+   "986 items \u00b7 31,702,536 sales rows",
+   "fresh food is what gets thrown away"
+  ],
+  [
+   "Sold in whole units in every store",
+   "707 items",
+   "items sold by weight can't be ordered in cases"
+  ],
+  [
+   "Sold on at least 70% of days",
+   "18,586 store-item pairs",
+   "items that rarely sell make every forecast a guess"
+  ],
+  [
+   "First sale on or before 2015-06-01",
+   "13,218 store-item pairs",
+   "enough history to train before all three test months"
+  ]
+ ],
+ "per_store": {
+  "44": 426,
+  "49": 436,
+  "8": 433,
+  "45": 428
+ },
+ "sample": [
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 103665,
+   "family": "BREAD/BAKERY",
+   "unit_sales": 20.0
+  },
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 108696,
+   "family": "DELI",
+   "unit_sales": 6.0
+  },
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 108698,
+   "family": "DELI",
+   "unit_sales": 5.0
+  },
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 108831,
+   "family": "POULTRY",
+   "unit_sales": 151.8350067138672
+  },
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 122095,
+   "family": "DAIRY",
+   "unit_sales": 14.0
+  },
+  {
+   "date": "2013-01-02",
+   "store_nbr": 44,
+   "item_nbr": 123347,
+   "family": "DAIRY",
+   "unit_sales": 2.0
+  }
+ ]
+}

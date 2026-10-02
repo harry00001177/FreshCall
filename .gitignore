@@ -1,4 +1,11 @@
-data/
+# data/ is checked in for reproducibility (docs/DATA.md), except:
+data/train.csv
+data/test.csv
+data/oil.csv
+data/transactions.csv
+data/*.7z
+data/*.zip
+data/ui_orders_log*.csv
 .env
 __pycache__/
 *.pyc

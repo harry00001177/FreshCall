@@ -61,6 +61,7 @@ log every substantive step, including failed attempts.
 53. 2026-10-01 — Repo tidy: pipeline scripts moved to scripts/
 54. 2026-10-01 — Correction: hand-back timing in the real-value table
 55. 2026-10-01 — Results tab: the video's three claims as charts
+56. 2026-10-02 — Submission docs; data, evaluation sheets and video checked in
 
 ---
 
@@ -2223,3 +2224,53 @@ per policy across all charts (palette validated in light and dark — passes;
 aqua is below 3:1 on light, so every bar carries a value label and there is
 a table view), two separate charts instead of a dual axis, hover tooltips.
 Checked in the browser.
+
+---
+
+## 2026-10-02 — Submission docs; data, evaluation sheets and video checked in
+
+**Why:** the instructor's deliverables note asks to check in the data and
+the evals with an explainer for each, product documentation (persona,
+input, output, box architecture, metrics targeted vs reached), file- and
+module-level documentation, run instructions, and the video.
+
+**Decisions (Harry):**
+- **Data checked in** (instructor's request): everything under `data/`
+  that a result was computed from, including the 86 MB perishable-item
+  sales file and the three small Kaggle CSVs the code reads. Left out:
+  the 5 GB raw `train.csv` (over GitHub's 100 MB limit), archives, unused
+  CSVs, and the app's runtime order log. Rejected: committing only our own
+  outputs, which would have left the store-45 re-score unable to run
+  without a Kaggle download.
+- **All evaluation sheets** in `data/l1l2/` checked in (previously only
+  three tables in `results/explanation_harness/`).
+- **Persona:** the manager who places tomorrow's fresh order at a
+  supermarket fresh section or a QSR restaurant, validated on
+  supermarket data. Matches the video.
+- **Metrics:** the original Problem Statement targets are listed with
+  what happened, including the two not met and the gate that was
+  abandoned, before the redesign and newsvendor results.
+- **Video** checked in at `video/` (45 MB, under the 100 MB file limit).
+
+**Built:** `docs/PRODUCT.md` (Mermaid box diagram, external components
+table), `docs/DATA.md`, `docs/EVALS.md` (E0 to E17 with scripts, results
+and log entries, plus a critique of the evaluation), module docstring for
+`src/freshcall/__init__.py`, README marker quick start, `streamlit` and
+`altair` added to `requirements.txt` (missing before: the app would not
+have installed from it).
+
+**Checked (run, 2026-10-02):** a copy of exactly the files to be
+committed, in a fresh virtual environment with the latest packages
+(pandas 3.0.6, scikit-learn 1.9.1, streamlit 1.64.0, Python 3.13):
+156 tests pass; `run_newsvendor.py evaluate 45` gives SUCCESS at all six
+ratios in about 10 s; `run_redesign.py` SUCCESS 3/3; time sensitivity,
+report_backtest, case gate (lift 1.264), error decomposition, both
+sensitivity checks and monitors all run; `build_ui_cache.py` reproduces
+`ui_cache.parquet` and `ui_results.json` exactly; the app opens with all
+three tabs and no exception for stores 45, 8 and 44. Re-fitting two
+store-8 items and one store-45 item gives predictions identical to the
+stored ones (difference 0.0).
+
+**Noticed, not changed:** Streamlit 1.64 warns that
+`use_container_width` will be removed in a later version; the app works
+on the current release, so the UI is left untouched before submission.

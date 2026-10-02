@@ -1,0 +1,392 @@
+1
+00:00:00,000 --> 00:00:04,860
+Hello, my name is CHAN HIO WENG, and this is my project demo.
+
+2
+00:00:04,900 --> 00:00:10,980
+Its name is FreshCall. Let me explain it step by step first. So here is the main page.
+
+3
+00:00:11,020 --> 00:00:15,780
+Here you can see what the store manager actually sees,
+
+4
+00:00:15,820 --> 00:00:20,200
+and this sidebar is only for demo use. First of all, let me explain my motivation.
+
+5
+00:00:20,240 --> 00:00:22,220
+The project comes from fresh food businesses,
+
+6
+00:00:22,260 --> 00:00:24,980
+like supermarkets and fast food restaurants,
+
+7
+00:00:25,020 --> 00:00:28,940
+where food that isn't sold soon is thrown away. Let's imagine that every night,
+
+8
+00:00:28,980 --> 00:00:34,460
+a restaurant or store manager orders tomorrow's fresh food, about a dozen items,
+
+9
+00:00:34,500 --> 00:00:39,980
+even a hundred, every day, usually by copying what sold on the same day last week.
+
+10
+00:00:40,020 --> 00:00:45,040
+However, copying last week gives one number, with no sense of how far to trust it.
+
+11
+00:00:46,740 --> 00:00:50,860
+And my product, FreshCall, was created to fix this problem.
+
+12
+00:00:50,900 --> 00:00:54,740
+It gives the manager an order for every item in whole cases,
+
+13
+00:00:54,780 --> 00:01:01,260
+and a likely range for the items that need judgement by the manager.
+
+14
+00:01:01,300 --> 00:01:04,800
+Next, I will introduce the dataset that I use for this project.
+
+15
+00:01:04,840 --> 00:01:09,800
+The dataset is Kaggle's Favorita dataset,
+
+16
+00:01:09,840 --> 00:01:16,720
+a real supermarket chain in Ecuador, about 125 million daily sales rows.
+
+17
+00:01:16,760 --> 00:01:20,300
+And here is what the raw data looks like.
+
+18
+00:01:20,340 --> 00:01:24,980
+Here is the date, store number, item number, its category and its sales.
+
+19
+00:01:26,360 --> 00:01:32,120
+So I kept the items that can be ordered and forecast honestly first.
+
+20
+00:01:32,160 --> 00:01:39,670
+And here are the steps. That leaves the perishable items,
+
+21
+00:01:39,710 --> 00:01:45,120
+sold in whole units so they fit in cases, sold on most days, with enough history.
+
+22
+00:01:45,160 --> 00:01:50,360
+Finally, about 430 items per store.
+
+23
+00:01:50,400 --> 00:01:57,480
+And here's a rule for every result of this project: I built each design on store 44,
+
+24
+00:01:57,520 --> 00:02:02,040
+then confirmed it once on a store I had never looked at,
+
+25
+00:02:02,080 --> 00:02:05,680
+like store 49, store 8 and store 45.
+
+26
+00:02:05,720 --> 00:02:09,840
+So which kind of AI fits this project?
+
+27
+00:02:09,880 --> 00:02:14,120
+The core job is a numeric forecast with years of sales history behind it.
+
+28
+00:02:14,160 --> 00:02:17,000
+That's why I chose narrow machine learning, quantile regression,
+
+29
+00:02:17,040 --> 00:02:21,660
+because instead of a single guess, it predicts a range of tomorrow's demand.
+
+30
+00:02:21,700 --> 00:02:26,840
+On the other hand, I deliberately kept the language model away from the order itself.
+
+31
+00:02:26,880 --> 00:02:29,740
+First, it can't give me a range that I can actually test.
+
+32
+00:02:29,780 --> 00:02:34,060
+Second, because LLMs sample their answers, it doesn't give the same answer twice.
+
+33
+00:02:34,100 --> 00:02:36,700
+Finally, to judge all of this fairly,
+
+34
+00:02:36,740 --> 00:02:39,660
+my baseline is simply what most managers do today,
+
+35
+00:02:39,700 --> 00:02:44,720
+which is copying last week's number, and every result is measured against it.
+
+36
+00:02:44,760 --> 00:02:48,120
+Okay, let me explain my first design, and why I dropped it.
+
+37
+00:02:48,160 --> 00:02:52,280
+My first design ordered only when the model was sure, and said "ASK ME" otherwise.
+
+38
+00:02:52,320 --> 00:02:57,520
+The first version, v1, was no better than random, and the second worked on store 49,
+
+39
+00:02:57,560 --> 00:03:02,320
+but handed back three quarters of the items.
+
+40
+00:03:02,360 --> 00:03:06,760
+For the results, I measured what a manager actually feels on store 44,
+
+41
+00:03:06,800 --> 00:03:12,480
+per forty items a night. Copying last week gives 15.5 wrong orders.
+
+42
+00:03:12,520 --> 00:03:17,400
+The ASK ME design gives 15.2, and about 16 minutes of the manager's time.
+
+43
+00:03:17,440 --> 00:03:24,100
+Letting the model answer everything gives 13.1 wrong orders in about 3 minutes.
+
+44
+00:03:24,140 --> 00:03:26,360
+But the lesson is that handing an item
+
+45
+00:03:26,400 --> 00:03:31,110
+to someone with no extra information makes the order worse.
+
+46
+00:03:31,150 --> 00:03:36,980
+So in fact, the first design didn't give us an ideal result, so I redesigned it.
+
+47
+00:03:37,020 --> 00:03:40,320
+Here's my latest design of FreshCall, version 3.
+
+48
+00:03:40,360 --> 00:03:43,720
+We're using store 8's data for confirmation.
+
+49
+00:03:43,760 --> 00:03:48,740
+So here is what the manager sees in FreshCall: every item has an order.
+
+50
+00:03:48,780 --> 00:03:54,000
+The bar here is the likely range in cases. The dot is the system's order.
+
+51
+00:03:54,040 --> 00:03:59,260
+The wider the bar, the less sure the model, so those rows come first,
+
+52
+00:04:01,560 --> 00:04:04,380
+and the details give a one-line reason.
+
+53
+00:04:04,420 --> 00:04:07,280
+The slow items that never sold more than a case a day
+
+54
+00:04:07,320 --> 00:04:12,180
+in the last four weeks are folded into standing orders.
+
+55
+00:04:12,220 --> 00:04:18,000
+So does it work? Compared with copying last week, on the items that need judgement,
+
+56
+00:04:18,040 --> 00:04:23,040
+wrong orders, meaning the wrong number of cases,
+
+57
+00:04:23,080 --> 00:04:27,993
+fell from 13.3 to 10.3 per forty items.
+
+58
+00:04:28,033 --> 00:04:33,060
+Units wasted fell 11%, and shortages 26%.
+
+59
+00:04:33,100 --> 00:04:36,560
+It beat last week in all three test months.
+
+60
+00:04:36,600 --> 00:04:42,320
+Then, what this doesn't show: it assumes the manager accepts every suggestion,
+
+61
+00:04:42,360 --> 00:04:46,560
+so a manager who knows something extra could do better still.
+
+62
+00:04:46,600 --> 00:04:53,340
+And on the slow items, the model wasted more than last week to avoid running out.
+
+63
+00:04:53,380 --> 00:04:57,840
+Whether that's worth it depends on what a shortage costs the store,
+
+64
+00:04:57,880 --> 00:05:02,467
+which is the project's next stage, or next step.
+
+65
+00:05:02,507 --> 00:05:08,340
+Moreover, as we can see, here is the cost ratio,
+
+66
+00:05:08,380 --> 00:05:16,020
+and waste versus stockout is a business choice, so I made it a setting:
+
+67
+00:05:16,060 --> 00:05:20,980
+this cost ratio means how much worse running out is than wasting.
+
+68
+00:05:21,020 --> 00:05:26,320
+So the system picks the number of cases with the lowest expected cost:
+
+69
+00:05:26,360 --> 00:05:31,690
+the newsvendor idea. Slide right, it orders more;
+
+70
+00:05:31,730 --> 00:05:35,640
+slide left, it orders less. According to the results,
+
+71
+00:05:35,680 --> 00:05:41,000
+my first version of this rule actually lost on my development stores,
+
+72
+00:05:41,040 --> 00:05:45,940
+because aiming at a higher forecast and then rounding up to whole cases over-ordered.
+
+73
+00:05:45,980 --> 00:05:52,120
+Then I fixed it, and registered the new test before touching store 45.
+
+74
+00:05:52,160 --> 00:05:56,100
+There, it beat the old order at every ratio:
+
+75
+00:05:56,140 --> 00:06:02,560
+6, 4 and 18% cheaper at ratios 2, 4 and 9.
+
+76
+00:06:02,600 --> 00:06:05,200
+One caution is that at lower ratios,
+
+77
+00:06:05,240 --> 00:06:09,680
+the savings look huge, but mostly because the system orders nothing,
+
+78
+00:06:09,720 --> 00:06:14,880
+and that's partly an artifact of my data having no stock carried over.
+
+79
+00:06:14,920 --> 00:06:16,920
+So I only quote two and above.
+
+80
+00:06:16,960 --> 00:06:22,070
+So overall, every number comes from my scripts.
+
+81
+00:06:22,110 --> 00:06:27,360
+This one re-scores store 45 right now,
+
+82
+00:06:27,400 --> 00:06:31,080
+printing the verdict I registered in git before the result existed.
+
+83
+00:06:31,120 --> 00:06:34,920
+I also leaked the answer into the model on purpose:
+
+84
+00:06:34,960 --> 00:06:42,792
+its lead over last week jumped from 11.8% to 20.7%,
+
+85
+00:06:42,832 --> 00:06:48,720
+a fake pass of my 15% target, and my unit tests catch that bug.
+
+86
+00:06:48,760 --> 00:06:55,590
+So overall, my project, FreshCall, is a tool to provide advice.
+
+87
+00:06:55,630 --> 00:06:58,860
+It never submits an order and shows no confidence score,
+
+88
+00:06:58,900 --> 00:07:03,700
+so the manager confirms every line,
+
+89
+00:07:03,740 --> 00:07:07,320
+following Singapore's IMDA framework for human oversight.
+
+90
+00:07:07,360 --> 00:07:13,300
+Not built: detecting one-off events like a local promotion.
+
+91
+00:07:13,340 --> 00:07:18,560
+And honestly, this is supermarket data with no stock records,
+
+92
+00:07:18,600 --> 00:07:25,420
+so I validated forecasting, how uncertainty is shown and the ordering rule,
+
+93
+00:07:25,460 --> 00:07:31,660
+not ordering with real inventory. So the case size and timings are all assumptions.
+
+94
+00:07:31,700 --> 00:07:37,000
+So to conclude, I began with a system designed to hold back when it was uncertain,
+
+95
+00:07:37,040 --> 00:07:40,080
+and the evidence led me away from that design.
+
+96
+00:07:40,120 --> 00:07:45,770
+So the final result is simpler and more useful,
+
+97
+00:07:45,810 --> 00:07:50,720
+which is an order for every item, sized to each store's own costs,
+
+98
+00:07:50,760 --> 00:07:57,880
+with every number reproducible from the repository. Thank you.
+

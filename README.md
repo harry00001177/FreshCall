@@ -1,6 +1,8 @@
 # FreshCall
 
-Next-day fresh-food ordering copilot for QSR store managers. For every
+Next-day fresh-food ordering copilot for the manager who places
+tomorrow's fresh order, at a supermarket's fresh section or a fast-food
+(QSR) restaurant. Validated on supermarket data. For every
 SKU it gives tomorrow's order in whole cases (and units) — sized for the
 store's own **cost ratio** (how much worse running out is than wasting) —
 the **likely range** when the forecast is uncertain, and a one-line reason — with the
@@ -19,8 +21,30 @@ project.
 the evaluation were done by me, and every number reported was actually
 run and can be reproduced from this repository.
 
-Glossary: [`CONTEXT.md`](./CONTEXT.md). Every decision, result and
-correction, with the real numbers: [`DECISIONS.md`](./DECISIONS.md).
+**Demo video** (7:58, English captions burned in; `.srt` alongside):
+[`video/FreshCall_demo.mp4`](./video/FreshCall_demo.mp4).
+
+**For the marker, quickest path** (tested on Python 3.13; no Kaggle download, no
+API key):
+
+```bash
+pip install -r requirements.txt
+python -m pytest                                            # 156 tests
+streamlit run app.py                                        # the manager's screen
+PYTHONPATH=src:scripts:experiments python experiments/run_newsvendor.py evaluate 45   # re-score store 45
+```
+
+**Documentation:**
+
+- [`docs/PRODUCT.md`](./docs/PRODUCT.md): persona, input, output,
+  architecture diagram, metrics targeted vs reached.
+- [`docs/DATA.md`](./docs/DATA.md): the data used, where it came from,
+  every file in `data/`.
+- [`docs/EVALS.md`](./docs/EVALS.md): every evaluation written, how to
+  re-run it, what came out (including the failures).
+- [`CONTEXT.md`](./CONTEXT.md): glossary.
+- [`DECISIONS.md`](./DECISIONS.md): every decision, result and
+  correction, with the real numbers.
 
 ## How the design got here
 
@@ -72,9 +96,9 @@ harness (human labels + LLM judge + negative controls) that led from an
 LLM-written sentence to a deterministic one, and every correction of a
 wrong turn along the way.
 
-Evaluation tables for the explanation layer are in
-[`results/explanation_harness/`](./results/explanation_harness/) (7–17
-rows each, with a few derived numbers from the Kaggle data per row).
+Evaluation sheets for the explanation layer are in `data/l1l2/`, with
+copies of the main tables in
+[`results/explanation_harness/`](./results/explanation_harness/).
 
 **Scope limits:** no inventory field, so this validates demand
 estimation, uncertainty and the ordering display (Layer A), not
@@ -115,9 +139,12 @@ experiments/     every evaluation in DECISIONS.md, one script each:
   run_explanation_v2.py           same-weekday fact block, 3-question labels
   run_explanation_v3.py           deterministic sentence vs the LLM one
 config.yaml      all assumptions (case_pack, safety, gate threshold...)
+data/            the data and stored predictions behind every result
+                 (docs/DATA.md); the 5 GB raw train.csv is not included
 results/         evaluation tables committed for review
-docs/            problem statement (v2 as submitted, v3 current),
-                 project overview (Chinese), original handoff
+video/           the recorded demo (mp4 + captions)
+docs/            PRODUCT.md, DATA.md, EVALS.md; problem statement
+                 (v2 as submitted, v3 current)
 ```
 
 ## Quick demo (no Kaggle data needed)
@@ -135,8 +162,14 @@ result.
 ## Manager UI
 
 ```bash
-PYTHONPATH=src:experiments python scripts/build_ui_cache.py   # once; needs the Kaggle data
 streamlit run app.py
+```
+
+The app reads `data/ui_cache.parquet`, which is checked in. To rebuild it
+from the stored predictions (about a minute):
+
+```bash
+PYTHONPATH=src:scripts:experiments python scripts/build_ui_cache.py
 ```
 
 One page: tomorrow's order for 40 SKUs at a chosen store — 45 or 8 (confirmation stores) or 44 (development) — as slim table-like
@@ -170,21 +203,16 @@ OPENROUTER_API_KEY=sk-or-...
 
 ## Data
 
-Source: [Corporación Favorita Grocery Sales Forecasting](https://www.kaggle.com/competitions/favorita-grocery-sales-forecasting) (Kaggle; 125,497,040 training rows, 54 stores, 4,100 items).
+Source: [Corporación Favorita Grocery Sales Forecasting](https://www.kaggle.com/competitions/favorita-grocery-sales-forecasting/data)
+(Kaggle; 125,497,040 training rows, 54 stores, 4,100 items).
 
-Raw Kaggle data is never committed (competition rules prohibit
-redistribution). You need a Kaggle account, the competition rules accepted
-on the competition page, and an API token (Kaggle CLI 2.x reads
-`~/.kaggle/access_token`).
-
-```bash
-kaggle competitions download -c favorita-grocery-sales-forecasting -p data
-cd data && unzip favorita-grocery-sales-forecasting.zip && for f in *.7z; do 7z x -y "$f"; done && cd ..
-python scripts/prepare_data.py
-```
-
-`7z` comes from `brew install p7zip`. `scripts/prepare_data.py` takes a few
-minutes (it scans the ~5 GB `train.csv`).
+The data every result was computed from is checked in under `data/`: the
+perishable-item sales (86 MB), the item lists, the stored predictions of
+every backtest and the evaluation sheets. Only the 5 GB raw `train.csv` is
+left out (too large for GitHub). So a fresh clone can open the app,
+re-score and re-run everything without a Kaggle download. What each file
+is, how it was made, and how to rebuild it from the original download:
+[`docs/DATA.md`](./docs/DATA.md).
 
 ## Run
 
@@ -196,10 +224,14 @@ PYTHONPATH=src python scripts/run_slice.py
 PYTHONPATH=src python scripts/run_backtest.py data/full_426_skus.parquet
 ```
 
-Experiments (they import each other, hence the longer path):
+Experiments (they import each other, hence the longer path). The three
+confirmation results first, then the rest:
 
 ```bash
 export PYTHONPATH=src:scripts:experiments
+python experiments/run_newsvendor.py evaluate 45   # newsvendor order, store 45
+python experiments/run_redesign.py                 # v3 redesign, store 8
+python experiments/run_time_sensitivity.py         # manager minutes
 python experiments/report_backtest.py data/backtest_results.parquet
 python experiments/run_case_gate_experiment.py
 python experiments/run_error_decomposition.py
@@ -211,6 +243,10 @@ python experiments/run_explanation_harness.py 1   # then label, then:
 python experiments/run_judge.py
 ```
 
-The full backtest (and the leak test) take about 6 minutes per store.
+Re-scoring from stored predictions takes seconds to a minute. The full
+backtest (and the leak test) take about 6 minutes per store. The
+confirmation scripts do not re-fit when their predictions file exists
+(pre-registered: one run); rename the file first to re-fit. All scripts and their
+results: [`docs/EVALS.md`](./docs/EVALS.md).
 The explanation and judge scripts call paid APIs and overwrite their
 sheets under `data/l1l2/`.
