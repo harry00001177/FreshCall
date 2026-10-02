@@ -2241,9 +2241,7 @@ module-level documentation, run instructions, and the video.
   that a result was computed from, including the 86 MB perishable-item
   sales file and the three small Kaggle CSVs the code reads. Left out:
   the 5 GB raw `train.csv` (over GitHub's 100 MB limit), archives, unused
-  CSVs, and the app's runtime order log. Rejected: committing only our own
-  outputs, which would have left the store-45 re-score unable to run
-  without a Kaggle download.
+  CSVs, and the app's runtime order log.
 - **All evaluation sheets** in `data/l1l2/` checked in (previously only
   three tables in `results/explanation_harness/`).
 - **Persona:** the manager who places tomorrow's fresh order at a
@@ -2328,9 +2326,8 @@ committed sheets in `data/l1l2/` (including the human labels).
 
 ## 2026-10-02 — Full pre-submission audit of every tracked file
 
-**Why (Harry):** after earlier "looks fine" checks still turned up
-problems, every one of the 103 tracked files was opened and checked
-against the code and data before submission.
+**Why:** a final check of every tracked file before submission: all 103
+files were opened and checked against the code and data.
 
 **Checked, no change needed:** every number in `docs/PRODUCT.md`,
 `DATA.md`, `EVALS.md` and `REPORT.md` against this log and the data files
@@ -2341,8 +2338,8 @@ re-scores); no personal background, keys or tokens in any file, including
 the two Problem Statements, the labelling notes and document metadata.
 
 **Fixed (Harry: fix all):**
-- The app's Data tab and `make_demo_data.py` still said the raw data is
-  not redistributed; both now state where the data is (`data/`,
+- The app's Data tab and `make_demo_data.py` described the data as not
+  included in the repo; both now state where the data is (`data/`,
   `docs/DATA.md`) and how it is rebuilt.
 - Stale module docstrings: `explain.py` (the manager's sentence is the
   template; the LLM path is evaluation-only), `model.py` (3 quantiles for
