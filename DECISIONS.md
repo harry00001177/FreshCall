@@ -2296,3 +2296,15 @@ data links.
 **Fact corrected while writing:** all four stores used (44, 49, 8, 45)
 are in Quito, not only 44 and 8 (`data/stores.csv`); `docs/EVALS.md`
 updated to match.
+
+**Source of "at most USD 1.11":** the OpenRouter key's lifetime usage as
+shown on its usage page (checked 2026-09-29). The key is the course-issued
+one and was also used for other coursework, hence "at most".
+
+**Final check (2026-10-02):** fresh `git clone` from GitHub: 156 tests
+pass, `run_newsvendor.py evaluate 45` SUCCESS, no broken relative links in
+any Markdown file, no keys or tokens in tracked files, video, report PDF
+and Markdown downloadable at full size. Fixed: README called stores 8 and
+45 the "third" and "fourth" unseen stores (49 was the first, so they are
+the second and third); README now says GitHub shows no player for the
+video and to use View raw.

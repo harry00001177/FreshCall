@@ -22,7 +22,9 @@ the evaluation were done by me, and every number reported was actually
 run and can be reproduced from this repository.
 
 **Demo video** (7:58, English captions burned in; `.srt` alongside):
-[`video/FreshCall_demo.mp4`](./video/FreshCall_demo.mp4).
+[`video/FreshCall_demo.mp4`](./video/FreshCall_demo.mp4)
+(45 MB; GitHub has no player for repository files, so click **View raw**
+to download it).
 
 **For the marker, quickest path** (tested on Python 3.13; no Kaggle download, no
 API key):
@@ -67,7 +69,7 @@ Favorita data (a supermarket stand-in for QSR data; 4 stores × 400+ SKUs ×
    model is wrong less often than "last week" (39.6% vs 46.5%). Handing a
    SKU to someone who has no extra information makes it worse.
 4. **Redesign — every SKU gets an order plus its likely range: confirmed**
-   on a third unseen store (store 8, pre-registered, all 3 folds). On the
+   on a second unseen store (store 8, pre-registered, all 3 folds). On the
    SKUs that need judgement, per 40-SKU night: wrong orders 13.3 → 10.3,
    units wasted −11%, units short −26%, and far less of the manager's time
    (faster under all 9 timing assumptions tested). The needed cases fall
@@ -76,7 +78,7 @@ Favorita data (a supermarket stand-in for QSR data; 4 stores × 400+ SKUs ×
    low-volume SKUs the P50 order wasted more units than "last week" while
    cutting stockouts — which raised the next question.
 5. **Newsvendor ordering — order for the store's costs: confirmed** on a
-   fourth unseen store (store 45, pre-registered, all 6 cost ratios, 3/3
+   third unseen store (store 45, pre-registered, all 6 cost ratios, 3/3
    folds each). Rounding a P50 forecast up to whole cases already covers
    demand on ~85–91% of days, so "P50" was really a high-service order
    whatever the store's costs. The new order picks the whole case count
