@@ -34,14 +34,19 @@ gate:
   sweep_thresholds: [0.60, 0.70, 0.85, 1.00, 1.20]
 
 model:
+  # Quantiles for the v1/v2 backtests (scripts/run_backtest.py). The
+  # newsvendor order uses the 9 quantiles in src/freshcall/newsvendor.py.
   quantiles: [0.1, 0.5, 0.9]
   # sklearn GradientBoostingRegressor hyperparameters — starting defaults,
-  # not tuned yet
+  # never tuned
   n_estimators: 100
   max_depth: 3
   learning_rate: 0.1
   random_state: 42
 
+# Record of the retired LLM sentence (DECISIONS.md 2026-09-25). Not read
+# by the code: explain.py sets these values itself, and the manager's
+# sentence is now a deterministic template.
 explain:
   model: "openai/gpt-4o-mini"
   temperature: 0
@@ -49,5 +54,5 @@ explain:
 
 slice:
   store_nbr: 44
-  density_threshold: 0.7
+  density_threshold: 0.7      # record only; scripts/prepare_data.py sets DENSITY_THRESHOLD itself
   first_test_item_nbr: 502331

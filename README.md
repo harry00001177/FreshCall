@@ -1,17 +1,17 @@
 # FreshCall
 
 Next-day fresh-food ordering copilot for the manager who places
-tomorrow's fresh order, at a supermarket's fresh section or a fast-food
-(QSR) restaurant. Validated on supermarket data. For every
-SKU it gives tomorrow's order in whole cases (and units) — sized for the
-store's own **cost ratio** (how much worse running out is than wasting) —
-the **likely range** when the forecast is uncertain, and a one-line reason — with the
-uncertain lines listed first, so the manager's attention goes where their
+tomorrow's fresh order at a supermarket's fresh section or a fast-food
+(QSR) restaurant, validated on supermarket data. For every SKU it gives
+tomorrow's order in whole cases (and units), sized for the store's own
+**cost ratio** (how much worse running out is than wasting), the **likely
+range** when the forecast is uncertain, and a one-line reason. The most
+uncertain lines come first, so the manager's attention goes where their
 own knowledge (a promotion, a local event, a delivery problem) matters
-most. Routine SKUs are collapsed as standing orders. Forecasts come from
-quantile regression; every number and word on the manager's screen is
-produced by deterministic Python. An LLM is used where it earned a place:
-as a judge inside the evaluation.
+most, and routine SKUs are collapsed into standing orders. Forecasts come
+from quantile regression, and every number and word on the manager's
+screen is produced by deterministic Python. An LLM is used only as a judge
+inside the evaluation.
 
 NTU MSc Enterprise AI, PE6201 (Emerging AI Technologies), end-of-course
 project.
@@ -55,7 +55,7 @@ PYTHONPATH=src:scripts:experiments python experiments/run_newsvendor.py evaluate
 
 The project started as "size tomorrow's order, **or abstain**" (hand
 uncertain SKUs back to the manager as ASK ME). Evaluated on Kaggle
-Favorita data (a supermarket stand-in for QSR data; 4 stores × 400+ SKUs ×
+Favorita supermarket data (4 stores × 400+ SKUs ×
 3 rolling-origin folds, each design pre-registered before its test):
 
 1. **v1 — abstain when the interval is wide (`rel_width`): failed.**

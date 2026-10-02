@@ -63,6 +63,7 @@ log every substantive step, including failed attempts.
 55. 2026-10-01 — Results tab: the video's three claims as charts
 56. 2026-10-02 — Submission docs; data, evaluation sheets and video checked in
 57. 2026-10-02 — Final report checked in
+58. 2026-10-02 — Full pre-submission audit of every tracked file
 
 ---
 
@@ -2322,3 +2323,49 @@ opens with all three tabs. This also removes the Streamlit 1.64
 deprecation warning noted in the entry above. README's Run section now
 keeps the paid-LLM scripts in a separate block, because they overwrite the
 committed sheets in `data/l1l2/` (including the human labels).
+
+---
+
+## 2026-10-02 — Full pre-submission audit of every tracked file
+
+**Why (Harry):** after earlier "looks fine" checks still turned up
+problems, every one of the 103 tracked files was opened and checked
+against the code and data before submission.
+
+**Checked, no change needed:** every number in `docs/PRODUCT.md`,
+`DATA.md`, `EVALS.md` and `REPORT.md` against this log and the data files
+(column names and row counts of every data file); `REPORT.md` identical to
+the approved final; DECISIONS index (57 entries) matches its headings; every
+README command run (quick demo, tests, app, store 45 and store 8
+re-scores); no personal background, keys or tokens in any file, including
+the two Problem Statements, the labelling notes and document metadata.
+
+**Fixed (Harry: fix all):**
+- The app's Data tab and `make_demo_data.py` still said the raw data is
+  not redistributed; both now state where the data is (`data/`,
+  `docs/DATA.md`) and how it is rebuilt.
+- Stale module docstrings: `explain.py` (the manager's sentence is the
+  template; the LLM path is evaluation-only), `model.py` (3 quantiles for
+  the v1/v2 backtests, 9 for the newsvendor order; hyperparameters never
+  tuned), `newsvendor.py` (describes the amended rule in use, not only the
+  failed first rule).
+- `docs/PRODUCT.md`: "own ... tuning" contradicted the report (never
+  tuned); "the only rented component is an LLM" ignored the libraries in
+  its own table; the feature box said weekday is shifted one day.
+- "No public QSR dataset has daily item-level sales" (PRODUCT, DATA) was
+  an absolute claim; now "I found no public QSR dataset ...".
+- `docs/EVALS.md` E13 gave the wrong reason for the judge's direction
+  errors; now matches the 2026-09-25 entry. Added that the LLM scripts
+  overwrite the human labels and how to restore them.
+- `config.yaml`: `explain.*` and `slice.density_threshold` are not read by
+  the code; commented as records only.
+- App: "built and tuned here" → "developed here"; the missing-cache message
+  uses the same PYTHONPATH as the README.
+- README opening rewritten in plainer wording ("An LLM is used only as a
+  judge inside the evaluation").
+
+**Re-run after the fixes** (pinned environment): 156 tests pass; store 45
+and store 8 re-scores SUCCESS; quick demo passes; app opens with no
+exception and shows the new Data-tab text. The demo video still shows the
+old Data-tab sentence; the video is not re-edited.
+

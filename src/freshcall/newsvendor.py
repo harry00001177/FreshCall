@@ -1,9 +1,16 @@
-"""Newsvendor ordering (PRE-REGISTRATION, DECISIONS.md 2026-09-28). P50 is
-only the cheapest order when a unit short costs the same as a unit wasted.
-With the store's cost ratio r = (cost of one unit short) / (cost of one
-unit wasted), the cheapest single-day order sits at quantile r / (1 + r).
-The prototype's on_hand = 0 (leftovers never carry over) is exactly the
-newsvendor's single-period setting."""
+"""Newsvendor ordering (DECISIONS.md 2026-09-28). P50 is only the cheapest
+order when a unit short costs the same as a unit wasted. With the store's
+cost ratio r = (cost of one unit short) / (cost of one unit wasted), the
+textbook single-day answer is the quantile r / (1 + r).
+
+The rule in use is the AMENDED one (`newsvendor_cases`): treat the 9
+quantile forecasts as equally likely demands and order the whole number
+of cases with the lowest average cost. The first pre-registered rule
+(`critical_quantile`: order at quantile r / (1 + r), then round up to
+cases) over-ordered and lost at ratios 2 and 4 on the development stores;
+it is kept for the record and its tests. `system_order` adds the store's
+minimum-order floor. The prototype's on_hand = 0 (leftovers never carry
+over) is exactly the newsvendor's single-period setting."""
 
 import math
 

@@ -36,7 +36,7 @@ section 3):
 3. Every line can be changed, and the manager confirms every line.
 
 **Validation note.** The data is a supermarket chain's (Kaggle Favorita),
-because no public QSR data has daily item sales. The ordering problem is
+because I found no public QSR dataset with daily item-level sales. The ordering problem is
 the same shape in both businesses: perishable items, whole cases, daily
 orders, waste versus running out.
 
@@ -82,7 +82,7 @@ flowchart TB
 
     subgraph CORE["FreshCall core: built, deterministic Python"]
         direction TB
-        F["Features: full daily grid, weekday,<br/>lag-1, lag-7, 7-day mean, all shifted one day"]
+        F["Features: full daily grid, weekday,<br/>lag-1, lag-7 and 7-day mean (shifted one day)"]
         M["Narrow ML: 9 quantile GBR models<br/>P10 ... P90 of tomorrow's units"]
         N["Newsvendor order: whole cases with the lowest<br/>expected cost at the cost ratio, plus floor"]
         R["Likely range: P10-P90 in cases,<br/>stretched to include the order"]
@@ -120,7 +120,7 @@ flowchart TB
 
 | Component | What it is | Where it is used | Own or rent |
 |---|---|---|---|
-| scikit-learn `GradientBoostingRegressor` | library | the 9 quantile forecasts | rent the algorithm, own the features, folds and tuning |
+| scikit-learn `GradientBoostingRegressor` | library | the 9 quantile forecasts | rent the algorithm (default hyperparameters, not tuned); own the features, folds and ordering rule |
 | pandas, NumPy | libraries | data handling | rent |
 | Streamlit, Altair | libraries | the manager's screen and the Results charts | rent |
 | Claude Haiku 4.5 via OpenRouter | LLM (API) | judge in the evaluation only (E9, E10, E13) | rent |
@@ -130,8 +130,9 @@ flowchart TB
 No agent framework, vector store or other tool is used.
 
 **Build versus rent.** The forecasting and the ordering logic are the
-product, so they are built and unit-tested (156 tests). The only rented
-component is an LLM, used offline as one part of the evaluation. An
+product, so they are built and unit-tested (156 tests). Apart from
+open-source libraries, the only rented component is an LLM, used offline as
+one part of the evaluation. An
 earlier version had an LLM write each reason sentence; it was replaced by
 a template because an LLM kept choosing words like "significantly" with
 nothing checking the size of the gap, and could not apply a numeric rule

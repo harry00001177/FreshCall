@@ -1,6 +1,6 @@
 """Generates demo/demo_sales.csv: a synthetic 90-day sales series (store 0,
-item 0) so `run_slice.py --demo` works without the Kaggle data, which may
-not be redistributed. Synthetic on purpose; never used for any reported
+item 0) so `run_slice.py --demo` runs end to end without any Kaggle data.
+Synthetic on purpose; never used for any reported
 result. Shape only loosely mimics a perishable SKU: a weekly pattern
 (busier Fri-Sun), noise, whole units, and a few zero days."""
 

@@ -37,7 +37,7 @@ DESIGNS = {
 st.set_page_config(page_title="FreshCall", layout="centered")
 
 if not CACHE.exists():
-    st.error("No UI data yet. Run `PYTHONPATH=src:experiments python scripts/build_ui_cache.py` first.")
+    st.error("No UI data yet. Run `PYTHONPATH=src:scripts:experiments python scripts/build_ui_cache.py` first.")
     st.stop()
 
 cfg = yaml.safe_load(open(ROOT / "config.yaml"))
@@ -232,15 +232,15 @@ if submitted:
 with tab_data:
     summary = json.load(open(SUMMARY))
     st.markdown("**Source:** Corporación Favorita Grocery Sales Forecasting (Kaggle) — a supermarket chain in "
-                "Ecuador, 2013–2017, 125,497,040 daily sales rows. Raw files aren't redistributed "
-                "(competition rules); `scripts/prepare_data.py` rebuilds everything below from them.")
+                "Ecuador, 2013–2017, 125,497,040 daily sales rows. The files used are in `data/` "
+                "(`docs/DATA.md`); `scripts/prepare_data.py` rebuilds them from the raw Kaggle files.")
     st.markdown("**How the items were chosen** (`scripts/prepare_data.py`) — each step keeps what can be ordered and "
                 "forecast honestly:")
     st.dataframe(pd.DataFrame(summary["funnel"], columns=["Step", "What's left", "Why"]),
                  hide_index=True, use_container_width=True)
     st.markdown("**Stores and their roles.** Every design was developed on one store, then checked once on a "
                 "store never looked at before (pre-registered in `DECISIONS.md`).")
-    roles = [(44, "Development", "every design (v1, v2, v3, newsvendor) was built and tuned here"),
+    roles = [(44, "Development", "every design (v1, v2, v3, newsvendor) was developed here"),
              (49, "Confirmation", "v1 / v2 ASK ME gates (not shown in this app)"),
              (8, "Confirmation", "v3: an order + likely range for every item"),
              (45, "Confirmation", "newsvendor order at the store's cost ratio")]

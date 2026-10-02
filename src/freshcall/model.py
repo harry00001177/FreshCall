@@ -1,9 +1,12 @@
-"""Three independent quantile GradientBoostingRegressors (alpha 0.1/0.5/0.9).
-Chosen over a single model because no vendor sells an inspectable, re-
-thresholdable interval, and an LLM gives no calibrated interval at all (see
-Problem Statement §4). Being three independent models means they can predict
-out of order (P50 below P10) — `enforce_non_crossing` is the required
-safety net, not an edge case."""
+"""Independent quantile GradientBoostingRegressors, one per quantile: three
+(0.1 / 0.5 / 0.9, config.yaml `model.quantiles`) for the v1/v2 backtests,
+nine (0.1 ... 0.9, `newsvendor.QUANTILES`) for the newsvendor order the
+system shows now. Chosen because no vendor sells an inspectable,
+re-thresholdable interval, and an LLM gives no calibrated interval at all
+(Problem Statement section 4). Independent models can predict out of order
+(P50 below P10), so sorting them back into order (`enforce_non_crossing`,
+`predict_all_quantiles`) is the required safety net, not an edge case.
+Hyperparameters are scikit-learn defaults from config.yaml, never tuned."""
 
 from sklearn.ensemble import GradientBoostingRegressor
 

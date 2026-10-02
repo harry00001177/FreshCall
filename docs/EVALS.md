@@ -44,7 +44,9 @@ Scripts marked "reads stored predictions" re-score in seconds from the
 committed files. Scripts marked "refits" retrain models (about 3.5 to 6
 minutes per store). Scripts marked "LLM" call OpenRouter, cost money and
 need `OPENROUTER_API_KEY` in `.env`; they overwrite their sheets in
-`data/l1l2/`, so the committed sheets are the record of the runs reported.
+`data/l1l2/`, including the human labels, so the committed sheets are the
+record of the runs reported. If you run one, restore the record with
+`git checkout data/l1l2`.
 
 Confirmation scripts do not re-fit when their predictions file already
 exists (the pre-registration allows one run): `run_newsvendor.py
@@ -158,7 +160,7 @@ against Harry's blind human labels, which are the reference.
 | E10 | 6 deliberately broken sentences + 2 clean | judge caught 5/6 (recall 5/6), 0 false alarms (precision 5/5); missed "significantly" for 36.9 vs 39.0. Only 8 items, so a probe, not a rate |
 | E11 | generator limited to higher / lower / about the same | 7/7 pass (was 3/7) |
 | E12 | fact block uses the same weekday's 4-week average | case 16 fixed; but the LLM broke the "about the same within 10%" rule in 2 of 14, and mixed cases with unlabelled units |
-| E13 | fixed template instead of the LLM | 14/14 on every check, Harry yes on all 14; judge said "direction" was wrong in 7/14, all checked and all wrong (it compared cases with units) |
+| E13 | fixed template instead of the LLM | 14/14 on every check, Harry yes on all 14; judge said "direction" was wrong in 7/14, all checked and all wrong (it read "lower than last week" as contradicting any non-zero order) |
 
 **Outcome:** the manager's screen uses the template and makes no LLM
 call. The judge stays a first screen in the evaluation, not an authority.

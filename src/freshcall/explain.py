@@ -1,9 +1,14 @@
-"""Wording layer. The LLM only ever paraphrases a fixed fact block into one
-sentence — it never sees raw data, never does arithmetic, and never runs at
-all on an abstain SKU-day (there's nothing for it to safely say). Every
-LLM response is checked with numeral containment before it's allowed to
-reach the manager; a failure falls back to a deterministic template, never
-to a retry or a guess."""
+"""Wording layer. The manager's sentence is the deterministic template
+`order_sentence` ("ORDER 3 cases (36 units). Tuesdays have averaged ...",
+DECISIONS.md 2026-09-25): no LLM runs on the manager's path.
+
+The earlier LLM path (gpt-4o-mini via OpenRouter: `_default_call_llm`,
+`generate_explanation`) is kept only for the evaluation scripts that
+re-create and compare its sentences, and for its tests. There the LLM only
+paraphrases a fixed fact block, never sees raw data, never does arithmetic
+and never runs on an abstain SKU-day; every response is checked with
+numeral containment, and a failure falls back to a deterministic template,
+never to a retry or a guess."""
 
 import os
 

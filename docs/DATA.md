@@ -20,8 +20,9 @@ How each evaluation uses these files: [`EVALS.md`](./EVALS.md).
 - **No inventory or on-hand field.** A day with no sales cannot be told
   apart from a stockout, and an order that depends on stock carried over
   cannot be validated. This is the main limit of every result.
-- Why a supermarket for a fresh-food ordering tool: no public QSR dataset
-  has daily item-level sales. The ordering problem has the same shape.
+- Why a supermarket for a fresh-food ordering tool: I found no public QSR
+  dataset with daily item-level sales. The ordering problem has the same
+  shape.
 
 **Terms.** Use here is non-commercial, for a university course project.
 The data belongs to Corporación Favorita and is provided under Kaggle's
