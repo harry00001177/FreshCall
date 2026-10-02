@@ -26,8 +26,9 @@ run and can be reproduced from this repository.
 (45 MB; GitHub has no player for repository files, so click **View raw**
 to download it).
 
-**For the marker, quickest path** (tested on Python 3.13; no Kaggle download, no
-API key):
+**For the marker, quickest path** (Python 3.13; `requirements.txt` pins the
+exact package versions the results were produced with; no Kaggle download,
+no API key):
 
 ```bash
 pip install -r requirements.txt
@@ -225,10 +226,15 @@ From the repository root:
 ```bash
 python -m pytest
 PYTHONPATH=src python scripts/run_slice.py
-PYTHONPATH=src python scripts/run_backtest.py data/full_426_skus.parquet
+PYTHONPATH=src python scripts/run_backtest.py data/full_426_skus.parquet   # re-fits store 44, ~6 min
 ```
 
-Experiments (they import each other, hence the longer path). The three
+`run_backtest.py` rewrites `data/backtest_results.parquet`. With the
+pinned versions the re-fit gives exactly the committed predictions; a newer
+scikit-learn shifts some P10/P90 values slightly.
+
+Experiments (they import each other, hence the longer path). These read
+stored predictions or re-fit locally and need no API key. The three
 confirmation results first, then the rest:
 
 ```bash
@@ -241,16 +247,22 @@ python experiments/run_case_gate_experiment.py
 python experiments/run_error_decomposition.py
 python experiments/run_sensitivity_active_skus.py
 python experiments/run_sensitivity_lookahead.py
-python experiments/run_leak_test.py
 python experiments/run_monitors.py
+python experiments/run_leak_test.py                # re-fits store 44, ~6 min
+```
+
+Re-scoring from stored predictions takes seconds to a minute. The
+confirmation scripts do not re-fit when their predictions file exists
+(pre-registered: one run); rename the file first to re-fit. All scripts
+and their results: [`docs/EVALS.md`](./docs/EVALS.md).
+
+**Scripts that call a paid LLM API** (need `OPENROUTER_API_KEY`, see
+Setup). They regenerate sentences and judge verdicts and **overwrite the
+committed sheets in `data/l1l2/`, including the human labels**, so they
+are not needed to check any result. If you run one, restore the record
+with `git checkout data/l1l2`.
+
+```bash
 python experiments/run_explanation_harness.py 1   # then label, then:
 python experiments/run_judge.py
 ```
-
-Re-scoring from stored predictions takes seconds to a minute. The full
-backtest (and the leak test) take about 6 minutes per store. The
-confirmation scripts do not re-fit when their predictions file exists
-(pre-registered: one run); rename the file first to re-fit. All scripts and their
-results: [`docs/EVALS.md`](./docs/EVALS.md).
-The explanation and judge scripts call paid APIs and overwrite their
-sheets under `data/l1l2/`.

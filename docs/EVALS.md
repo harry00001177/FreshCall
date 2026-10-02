@@ -213,7 +213,8 @@ run_backtest(items, 8, cfg, raw).to_parquet('data/backtest_results_store8_refit.
 ```
 
 Checked on 2026-10-02 for two items: the re-fit predictions match the
-stored ones exactly.
+stored ones exactly. Use the pinned versions in `requirements.txt`: a newer
+scikit-learn gives slightly different P10/P90 on some items.
 
 ### E16. Time sensitivity
 

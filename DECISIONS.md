@@ -2308,3 +2308,17 @@ and Markdown downloadable at full size. Fixed: README called stores 8 and
 45 the "third" and "fourth" unseen stores (49 was the first, so they are
 the second and third); README now says GitHub shows no player for the
 video and to use View raw.
+
+**Package versions pinned (2026-10-02, same check):** re-fitting three
+store-44 items with scikit-learn 1.9.1 changed P10/P90 on one item by up
+to 0.74 units (P50 unchanged); with 1.6.1, the version every result was
+produced with, the re-fit matched the committed predictions exactly.
+`requirements.txt` now pins the exact local versions (scikit-learn 1.6.1,
+pandas 2.2.3, numpy 2.1.3, pyarrow 19.0.0, streamlit 1.45.1, altair 5.5.0,
+pyyaml 6.0.2, openai 3.19.0, python-dotenv 1.1.0, pytest 8.3.4). In a fresh
+Python 3.13 environment from that file: 156 tests pass, store 45 and store
+8 re-scores give SUCCESS, the store-44 re-fit differs by 0.0, and the app
+opens with all three tabs. This also removes the Streamlit 1.64
+deprecation warning noted in the entry above. README's Run section now
+keeps the paid-LLM scripts in a separate block, because they overwrite the
+committed sheets in `data/l1l2/` (including the human labels).
