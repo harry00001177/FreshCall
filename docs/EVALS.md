@@ -249,6 +249,6 @@ old P50 order, pooled and in ≥ 2 of 3 folds, at every ratio tested.
 - **Small samples in the language checks:** 6 to 17 sentences per batch,
   one human labeller. They show the failure modes exist; they are not
   rate estimates.
-- **Same city:** stores 44 and 8 are both in Quito.
+- **Same city:** all four stores (44, 49, 8, 45) are in Quito.
 - **The LLM judge is unreliable on direction and on overstatement.** It
   is kept as a screen, never as the reference.

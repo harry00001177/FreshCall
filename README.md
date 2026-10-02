@@ -36,6 +36,8 @@ PYTHONPATH=src:scripts:experiments python experiments/run_newsvendor.py evaluate
 
 **Documentation:**
 
+- [`docs/REPORT.md`](./docs/REPORT.md) (PDF: [`docs/FreshCall_Report.pdf`](./docs/FreshCall_Report.pdf)):
+  the trade-off analysis report.
 - [`docs/PRODUCT.md`](./docs/PRODUCT.md): persona, input, output,
   architecture diagram, metrics targeted vs reached.
 - [`docs/DATA.md`](./docs/DATA.md): the data used, where it came from,
@@ -143,7 +145,7 @@ data/            the data and stored predictions behind every result
                  (docs/DATA.md); the 5 GB raw train.csv is not included
 results/         evaluation tables committed for review
 video/           the recorded demo (mp4 + captions)
-docs/            PRODUCT.md, DATA.md, EVALS.md; problem statement
+docs/            REPORT.md (+ PDF), PRODUCT.md, DATA.md, EVALS.md; problem statement
                  (v2 as submitted, v3 current)
 ```
 

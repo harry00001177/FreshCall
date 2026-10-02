@@ -62,6 +62,7 @@ log every substantive step, including failed attempts.
 54. 2026-10-01 — Correction: hand-back timing in the real-value table
 55. 2026-10-01 — Results tab: the video's three claims as charts
 56. 2026-10-02 — Submission docs; data, evaluation sheets and video checked in
+57. 2026-10-02 — Final report checked in
 
 ---
 
@@ -2274,3 +2275,24 @@ stored ones (difference 0.0).
 **Noticed, not changed:** Streamlit 1.64 warns that
 `use_container_width` will be removed in a later version; the app works
 on the current release, so the UI is left untouched before submission.
+
+---
+
+## 2026-10-02 — Final report checked in
+
+`docs/REPORT.md` and `docs/FreshCall_Report.pdf` (3 pages, about 1,370
+words including tables, inside the instructor's 1,200 ± 15%). Structure:
+problem and what changes; why AI; own or rent and cost; four trade-offs
+(abstain vs answer every item, fixed service level vs cost ratio, fluent
+vs checkable text, evaluation rigour vs speed); critique (metrics,
+evaluations, difficulties and tuning, rough edges); risks and
+guardrails; future path.
+
+**Decisions (Harry):** written in plain formal English, first person;
+the story the video already tells is kept short so the space goes to
+trade-off reasoning and critique. Header shows only the repository and
+data links.
+
+**Fact corrected while writing:** all four stores used (44, 49, 8, 45)
+are in Quito, not only 44 and 8 (`data/stores.csv`); `docs/EVALS.md`
+updated to match.
